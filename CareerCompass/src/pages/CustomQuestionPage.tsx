@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CheckCircle2, BrainCircuit } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, BrainCircuit, Command } from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
 import { CUSTOM_QUESTIONS } from '../data/customQuestions';
 import { ProgressBar } from '../components/ProgressBar';
+import { useAssessmentKeyboard } from '../hooks/useAssessmentKeyboard';
 
 export const CustomQuestionPage: React.FC = () => {
   const navigate = useNavigate();
-  const { customAnswers, setCustomAnswer, completeCustom } = useAssessment();
+  const { customAnswers, setCustomAnswer, completeCustom, isFiroBComplete } = useAssessment();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showNextTestPrompt, setShowNextTestPrompt] = useState(false);
 
   const question = CUSTOM_QUESTIONS[currentIndex];
   const selectedOptionId = customAnswers[question.id] || null;
@@ -18,7 +20,7 @@ export const CustomQuestionPage: React.FC = () => {
     if (currentIndex < CUSTOM_QUESTIONS.length - 1) {
       setTimeout(() => {
         setCurrentIndex(prev => prev + 1);
-      }, 250);
+      }, 200);
     }
   };
 
@@ -33,26 +35,47 @@ export const CustomQuestionPage: React.FC = () => {
       setCurrentIndex(prev => prev + 1);
     } else {
       completeCustom();
-      navigate('/assessment');
+      if (isFiroBComplete) {
+        navigate('/assessment/complete');
+      } else {
+        setShowNextTestPrompt(true);
+      }
     }
   };
 
+  // Keyboard navigation: maps 1 -> 'a', 2 -> 'b', 3 -> 'c', 4 -> 'd'
+  const optionsMap: Record<string, string> = {
+    '1': 'a',
+    '2': 'b',
+    '3': 'c',
+    '4': 'd'
+  };
+
+  useAssessmentKeyboard({
+    onSelectOption: handleSelectOption,
+    onPrevious: handlePrevious,
+    onNext: handleNext,
+    optionsCount: question.options.length,
+    optionsMap,
+    canGoNext: Boolean(selectedOptionId),
+  });
+
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
       
       {/* Top Header & Progress */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center font-bold text-xs">
-              <BrainCircuit className="w-4 h-4 text-[#C86D51]" />
+          <div className="flex items-center gap-2.5">
+            <span className="w-9 h-9 rounded-xl bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center font-bold text-xs shadow-xs">
+              <BrainCircuit className="w-5 h-5 text-[#C86D51]" />
             </span>
             <span className="font-editorial font-bold text-[#1E3A34] text-lg sm:text-xl">
               CareerCompass Custom Test
             </span>
           </div>
 
-          <span className="badge-terracotta px-3 py-1 rounded-full text-xs font-semibold">
+          <span className="badge-terracotta px-3.5 py-1 rounded-full text-xs font-semibold">
             {question.section} • {question.type}
           </span>
         </div>
@@ -65,13 +88,15 @@ export const CustomQuestionPage: React.FC = () => {
       </div>
 
       {/* Main Single Question Card */}
-      <div className="editorial-card p-8 sm:p-12 space-y-8 shadow-md transition-all animate-fade-in bg-white border border-[#E5E2D9]">
+      <div className="editorial-card p-6 sm:p-12 space-y-8 shadow-md transition-all animate-fade-in bg-white border border-[#E5E2D9]">
         
-        {/* Question Counter & Text */}
+        {/* Question Counter & Keyboard Hint */}
         <div className="space-y-4">
           <div className="flex items-center justify-between text-xs font-mono font-bold text-[#C86D51]">
             <span>QUESTION {question.id} OF 30</span>
-            <span className="text-[#5A6E68] uppercase">{question.section} SECTION</span>
+            <span className="hidden sm:flex items-center gap-1 text-[#5A6E68]">
+              <Command className="w-3.5 h-3.5" /> Keys [1-4] or [A-D] active
+            </span>
           </div>
 
           <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#1E3A34] leading-snug">
@@ -80,22 +105,22 @@ export const CustomQuestionPage: React.FC = () => {
         </div>
 
         {/* Multiple Choice Option Cards */}
-        <div className="space-y-3 pt-2">
-          {question.options.map((opt) => {
+        <div className="space-y-3.5 pt-2">
+          {question.options.map((opt, optIdx) => {
             const isSelected = selectedOptionId === opt.id;
             return (
               <button
                 key={opt.id}
                 onClick={() => handleSelectOption(opt.id)}
-                className={`w-full p-5 rounded-xl border text-left flex items-start justify-between gap-4 transition-all cursor-pointer ${
+                className={`w-full min-h-[52px] p-5 rounded-xl border text-left flex items-start justify-between gap-4 transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-[#1E3A34] text-[#F9F8F3] border-[#1E3A34] shadow-md scale-101'
+                    ? 'bg-[#1E3A34] text-[#F9F8F3] border-[#1E3A34] shadow-md scale-[1.01]'
                     : 'bg-[#F9F8F3] text-[#1E3A34] border-[#E5E2D9] hover:bg-[#F2F0E6] hover:border-[#D2CDBF]'
                 }`}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3.5">
                   <div className={`w-7 h-7 rounded-lg border flex items-center justify-center font-mono text-xs font-bold uppercase shrink-0 mt-0.5 ${
-                    isSelected ? 'border-[#C86D51] bg-[#C86D51] text-white' : 'border-[#5A6E68] text-[#5A6E68] bg-white'
+                    isSelected ? 'border-[#C86D51] bg-[#C86D51] text-white' : 'border-[#D5D1C4] text-[#5A6E68] bg-white'
                   }`}>
                     {opt.id}
                   </div>
@@ -117,10 +142,10 @@ export const CustomQuestionPage: React.FC = () => {
         <button
           onClick={handlePrevious}
           disabled={currentIndex === 0}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${
             currentIndex === 0
               ? 'opacity-40 cursor-not-allowed text-[#5A6E68]'
-              : 'bg-white border border-[#E5E2D9] text-[#1E3A34] hover:bg-[#F2F0E6]'
+              : 'bg-white border border-[#E5E2D9] text-[#1E3A34] hover:bg-[#F2F0E6] cursor-pointer'
           }`}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -134,7 +159,7 @@ export const CustomQuestionPage: React.FC = () => {
         <button
           onClick={handleNext}
           disabled={!selectedOptionId}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] cursor-pointer ${
             !selectedOptionId
               ? 'opacity-50 cursor-not-allowed bg-[#E5E2D9] text-[#5A6E68]'
               : currentIndex === CUSTOM_QUESTIONS.length - 1
@@ -146,6 +171,45 @@ export const CustomQuestionPage: React.FC = () => {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+      
+      {/* Next Test Sequential Prompt Modal */}
+      {showNextTestPrompt && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 sm:p-10 max-w-lg w-full border border-[#E5E2D9] shadow-2xl text-center space-y-6">
+            <div className="w-16 h-16 rounded-2xl bg-[#EBF2F0] text-[#1E3A34] flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-9 h-9 text-emerald-600" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="badge-terracotta px-3 py-1 rounded-full text-xs font-bold uppercase">
+                Part 1 of 2 Complete
+              </span>
+              <h3 className="font-editorial text-2xl sm:text-3xl font-bold text-[#1E3A34]">
+                Aptitude & Scenarios Test Completed!
+              </h3>
+              <p className="text-sm text-[#5A6E68] leading-relaxed">
+                Great job! Now take the <strong>FIRO-B Interpersonal Test</strong> to synthesize your complete career profile and unlock your customized roadmap.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={() => navigate('/assessment/firo-b')}
+                className="btn-terracotta w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
+              >
+                <span>Start Part 2: FIRO-B Test →</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/assessment')}
+                className="w-full py-3 rounded-xl border border-[#E5E2D9] bg-[#F9F8F3] hover:bg-[#F2F0E6] text-xs font-semibold text-[#5A6E68] cursor-pointer"
+              >
+                Return to Assessment Hub
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

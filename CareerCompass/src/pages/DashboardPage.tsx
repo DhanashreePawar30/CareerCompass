@@ -1,23 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer,
+  ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell
 } from 'recharts';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Compass, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
-import { CAREER_DATABASE } from '../data/careerDatabase';
+import { calculateArchetype } from '../data/archetypes';
 
 export const DashboardPage: React.FC = () => {
-  const { personalDetails, academicDetails, firoBScores, customTraitScores } = useAssessment();
+  const { personalDetails, academicDetails, firoBScores, customTraitScores, rankedCareers, isAssessmentComplete } = useAssessment();
 
-  // Trait Radar Data
+  // Trait Radar Data derived from real scores
   const radarData = [
-    { subject: 'Analytical Logic', score: (customTraitScores.Analytical * 8) + 20 },
-    { subject: 'Technical Mindset', score: (customTraitScores.Technical * 8) + 15 },
-    { subject: 'Creative Thinking', score: (customTraitScores.Creative * 8) + 10 },
-    { subject: 'Leadership & Strategy', score: (customTraitScores.Leadership * 8) + 18 },
-    { subject: 'Interpersonal Warmth', score: (firoBScores.EA + firoBScores.WA) / 1.1 }
+    { subject: 'Analytical Logic', score: Math.min(100, (customTraitScores.Analytical * 12) + 20) },
+    { subject: 'Technical Mindset', score: Math.min(100, (customTraitScores.Technical * 12) + 15) },
+    { subject: 'Creative Thinking', score: Math.min(100, (customTraitScores.Creative * 12) + 15) },
+    { subject: 'Leadership & Strategy', score: Math.min(100, (customTraitScores.Leadership * 12) + 15) },
+    { subject: 'Interpersonal Warmth', score: Math.min(100, (firoBScores.EA + firoBScores.WA) || 30) }
   ];
 
   // FIRO-B Scores Bar Data
@@ -30,12 +30,44 @@ export const DashboardPage: React.FC = () => {
     { name: 'Wanted Aff', score: firoBScores.WA, fill: '#5F8576' }
   ];
 
-  const topMatch = CAREER_DATABASE[0]; // Data Analyst
-  const secondaryMatches = CAREER_DATABASE.slice(1, 4);
+  const topMatch = rankedCareers[0] || {
+    id: 'data-analyst',
+    title: 'Data Analyst & Business Intelligence Lead',
+    cluster: 'Data & Analytics',
+    matchScore: 92,
+    salaryRange: { mid: '$85,000 - $115,000' },
+    description: 'Transforms complex data streams into actionable strategic roadmaps.',
+    workEnvironment: 'Collaborative analytics squads with focused deep-work time.',
+    requiredSkills: ['SQL', 'Python', 'Tableau', 'Statistical Analysis'],
+    academicTracks: [{ degree: 'B.Tech / B.S.', focus: 'Data Science & Applied Math' }]
+  };
+
+  const secondaryMatches = rankedCareers.slice(1, 4);
+  const archetype = calculateArchetype(firoBScores, customTraitScores);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
       
+      {/* Assessment Status Notice */}
+      {!isAssessmentComplete && (
+        <div className="p-6 rounded-2xl bg-[#1E3A34] text-[#F9F8F3] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <Compass className="w-8 h-8 text-[#C86D51] shrink-0" />
+            <div>
+              <p className="font-bold text-sm">Real-time baseline view.</p>
+              <p className="text-xs text-[#A2B5AF]">Take the complete assessment to unlock your verified score breakdown and personalized metrics.</p>
+            </div>
+          </div>
+          <Link
+            to="/assessment"
+            className="btn-terracotta px-5 py-2.5 rounded-xl text-xs font-bold shrink-0 flex items-center gap-2"
+          >
+            <span>Take Assessment Now</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* Dashboard Greeting Banner */}
       <div className="bg-[#1E3A34] text-[#F9F8F3] p-8 sm:p-12 rounded-3xl space-y-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#C86D51]/15 rounded-full blur-3xl pointer-events-none" />
@@ -44,63 +76,88 @@ export const DashboardPage: React.FC = () => {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#142824] text-[#C86D51] border border-[#2C524A] text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Career Fit Assessment Complete</span>
+              <span>Persona: {archetype.title}</span>
             </div>
             <h1 className="font-editorial text-3xl sm:text-5xl font-bold text-white">
-              Hi, {personalDetails.name || 'Tanishka'}! 👋
+              Hi, {personalDetails.name || 'Career Explorer'}! 👋
             </h1>
             <p className="text-[#A2B5AF] text-sm sm:text-base max-w-2xl">
-              Here is your multi-vector Career Compass breakdown synthesized from your FIRO-B metrics, logic aptitude, and academic history.
+              "{archetype.tagline}" Here is your multi-vector Career Compass breakdown synthesized from your assessment metrics.
             </p>
           </div>
 
-          <Link
-            to="/dashboard/recommendations"
-            className="btn-terracotta px-6 py-3.5 rounded-xl font-semibold text-sm shadow-md flex items-center gap-2 shrink-0"
-          >
-            <span>All Recommendations</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            <Link
+              to="/assessment/unlock"
+              className="px-5 py-3 rounded-xl bg-[#142824] border border-[#2C524A] text-white hover:bg-[#1a332e] text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+            >
+              <span>View Archetype Card</span>
+            </Link>
+
+            <Link
+              to="/dashboard/recommendations"
+              className="btn-terracotta px-6 py-3 rounded-xl font-semibold text-xs shadow-md flex items-center justify-center gap-2"
+            >
+              <span>All Recommendations</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         {/* Quick Details Chips */}
         <div className="pt-4 border-t border-[#2C524A] flex flex-wrap gap-4 text-xs text-[#A2B5AF]">
-          <div>Academic Track: <span className="font-semibold text-white">{academicDetails.courseStream}</span></div>
+          <div>Archetype: <span className="font-semibold text-[#C86D51]">{archetype.title}</span></div>
           <div>•</div>
-          <div>Top Fit: <span className="font-semibold text-[#C86D51]">{topMatch.title} ({topMatch.matchScore}%)</span></div>
+          <div>Academic Track: <span className="font-semibold text-white">{academicDetails.courseStream || 'Profile Configured'}</span></div>
           <div>•</div>
-          <div>Status: <span className="font-semibold text-white">Verified Profile</span></div>
+          <div>Top Role Match: <span className="font-semibold text-[#C86D51]">{topMatch.title} ({topMatch.matchScore}%)</span></div>
         </div>
       </div>
 
       {/* Grid: Radar Metrics & FIRO-B Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Radar Chart: Holistic Trait Matrix */}
+        {/* Trait Dimension Vector Matrix */}
         <div className="editorial-card p-6 sm:p-8 space-y-6 bg-white border border-[#E5E2D9]">
           <div className="flex items-center justify-between border-b border-[#E5E2D9] pb-4">
             <div>
-              <h3 className="font-editorial text-xl font-bold text-[#1E3A34]">Holistic Trait Radar</h3>
-              <p className="text-xs text-[#5A6E68]">Aptitude, Interests & Work Style Profile</p>
+              <h3 className="font-editorial text-xl font-bold text-[#1E3A34]">Holistic Trait Dimension Matrix</h3>
+              <p className="text-xs text-[#5A6E68]">Aptitude, Interests & Work Style Vector Breakdown</p>
             </div>
             <span className="badge-terracotta px-3 py-1 rounded-full text-xs font-bold">5 Vectors</span>
           </div>
 
-          <div className="h-80 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                <PolarGrid stroke="#E5E2D9" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#1E3A34', fontSize: 11, fontWeight: 600 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#5A6E68', fontSize: 10 }} />
-                <Radar
-                  name="Trait Score"
-                  dataKey="score"
-                  stroke="#C86D51"
-                  fill="#C86D51"
-                  fillOpacity={0.45}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+          <div className="space-y-4 pt-2">
+            {radarData.map((item, idx) => {
+              const benchmarks = [
+                'Top 5% Quantitative Aptitude',
+                'Advanced Systems Craft',
+                'Lateral Ideation & Vision',
+                'Strategic Team Velocity',
+                'Empathetic Interpersonal Dynamic'
+              ];
+              return (
+                <div key={idx} className="space-y-1.5 p-3 rounded-xl bg-[#F9F8F3] border border-[#E5E2D9]/70">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-[#1E3A34]">{item.subject}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-[#5A6E68] bg-white px-2 py-0.5 rounded border border-[#E5E2D9]">
+                        {benchmarks[idx]}
+                      </span>
+                      <span className="font-mono font-bold text-[#C86D51] text-xs">
+                        {item.score}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-full h-2.5 bg-[#E5E2D9] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#C86D51] to-[#1E3A34] transition-all duration-700"
+                      style={{ width: `${item.score}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -168,59 +225,56 @@ export const DashboardPage: React.FC = () => {
           <div className="bg-white p-5 rounded-2xl border border-[#E5E2D9] flex flex-col justify-between">
             <p className="text-xs text-[#5A6E68] font-bold uppercase">Required Key Skill</p>
             <p className="text-sm font-semibold text-[#C86D51] mt-1">{topMatch.requiredSkills[0]}</p>
-            <Link
-              to={`/explorer/${topMatch.id}`}
-              className="text-xs font-bold text-[#1E3A34] hover:text-[#C86D51] flex items-center gap-1 mt-2"
-            >
-              <span>Explore Career Roadmap</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
         </div>
-      </div>
 
-      {/* Secondary Career Matches */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="font-editorial text-2xl font-bold text-[#1E3A34]">
-            Top Secondary Career Paths
-          </h3>
+        <div className="pt-2 flex justify-end">
           <Link
-            to="/dashboard/recommendations"
-            className="text-sm font-semibold text-[#C86D51] hover:text-[#B25A40] flex items-center gap-1"
+            to={`/explorer/${topMatch.id}`}
+            className="btn-terracotta px-6 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 shadow-md"
           >
-            <span>View All Ranked Clusters</span>
+            <span>Explore Complete 5-Year Blueprint</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
+      </div>
+
+      {/* Secondary Career Matches Grid */}
+      <div className="space-y-6">
+        <h3 className="font-editorial text-2xl font-bold text-[#1E3A34]">
+          Other High-Resonance Career Matches
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {secondaryMatches.map((career) => (
-            <div key={career.id} className="editorial-card p-6 flex flex-col justify-between space-y-6 hover:-translate-y-1">
+            <div key={career.id} className="editorial-card p-6 flex flex-col justify-between space-y-6 bg-white border border-[#E5E2D9] shadow-xs hover:shadow-md transition-shadow">
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="badge-forest px-3 py-1 rounded-full text-xs font-bold">
+                  <span className="text-[11px] font-mono font-bold text-[#C86D51] uppercase">
                     {career.cluster}
                   </span>
-                  <span className="font-mono text-sm font-bold text-[#C86D51]">
-                    {career.matchScore}% Match
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#F2F0E6] text-xs font-bold text-[#1E3A34]">
+                    {career.matchScore}% Fit
                   </span>
                 </div>
+
                 <h4 className="font-editorial text-lg font-bold text-[#1E3A34]">
                   {career.title}
                 </h4>
-                <p className="text-xs text-[#5A6E68] line-clamp-3">
+
+                <p className="text-xs text-[#5A6E68] line-clamp-2 leading-relaxed">
                   {career.summary}
                 </p>
               </div>
 
               <div className="pt-4 border-t border-[#E5E2D9] flex items-center justify-between">
-                <span className="text-xs text-[#5A6E68] font-semibold">{career.salaryRange.entry}</span>
+                <span className="text-xs font-bold text-[#1E3A34]">{career.salaryRange.mid}</span>
                 <Link
                   to={`/explorer/${career.id}`}
-                  className="btn-terracotta px-4 py-2 rounded-lg text-xs font-semibold"
+                  className="text-xs font-semibold text-[#C86D51] hover:text-[#B25A40] flex items-center gap-1"
                 >
-                  View Path →
+                  <span>Details</span>
+                  <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
             </div>

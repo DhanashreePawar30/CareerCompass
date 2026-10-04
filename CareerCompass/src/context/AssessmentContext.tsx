@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FIRO_B_QUESTIONS } from '../data/firoBQuestions';
 import { CUSTOM_QUESTIONS } from '../data/customQuestions';
-import { CAREER_DATABASE } from '../data/careerDatabase';
-import type { CareerProfile } from '../data/careerDatabase';
+import { CAREER_DATABASE, CAREER_CLUSTERS } from '../data/careerDatabase';
+import type { CareerProfile, CareerCluster } from '../data/careerDatabase';
 
 export interface PersonalDetails {
   name: string;
@@ -21,7 +21,7 @@ export interface AcademicDetails {
 }
 
 export interface FiroBScores {
-  EI: number; // Expressed Inclusion
+  EI: number; // Expressed Inclusion (0-54)
   WI: number; // Wanted Inclusion
   EC: number; // Expressed Control
   WC: number; // Wanted Control
@@ -49,6 +49,10 @@ interface AssessmentContextType {
   isCustomComplete: boolean;
   isAssessmentComplete: boolean;
   
+  // Dynamic Ranked Careers & Clusters
+  rankedCareers: CareerProfile[];
+  rankedClusters: (CareerCluster & { matchPercentage: number })[];
+
   // Actions
   updatePersonalDetails: (details: Partial<PersonalDetails>) => void;
   updateAcademicDetails: (details: Partial<AcademicDetails>) => void;
@@ -59,39 +63,73 @@ interface AssessmentContextType {
   completeFiroB: () => void;
   completeCustom: () => void;
   resetAssessment: () => void;
+  loadDemoUser: () => void;
   getCareerById: (id: string) => CareerProfile | undefined;
 }
 
-const defaultPersonal: PersonalDetails = {
-  name: 'Tanishka Sharma',
-  age: '20',
-  gender: 'Female',
-  email: 'tanishka.sharma@example.com',
+const emptyPersonal: PersonalDetails = {
+  name: '',
+  age: '',
+  gender: '',
+  email: '',
+  phone: ''
+};
+
+const emptyAcademic: AcademicDetails = {
+  educationLevel: '',
+  courseStream: '',
+  keySubjects: '',
+  gradePercentage: '',
+  skillTags: []
+};
+
+const demoPersonal: PersonalDetails = {
+  name: 'Aarav Sharma',
+  age: '21',
+  gender: 'Male',
+  email: 'aarav.sharma@example.edu',
   phone: '+91 98765 43210'
 };
 
-const defaultAcademic: AcademicDetails = {
-  educationLevel: 'Undergraduate (Year 3)',
-  courseStream: 'B.Tech Computer Science & Engineering',
-  keySubjects: 'Data Structures, Database Management Systems, Applied Statistics, Software Engineering',
-  gradePercentage: '88.5%',
-  skillTags: ['Python', 'SQL', 'Data Analysis', 'React', 'Problem Solving', 'UI Design']
+const demoAcademic: AcademicDetails = {
+  educationLevel: 'Undergraduate (3rd-4th Year)',
+  courseStream: 'Computer Science & Engineering',
+  keySubjects: 'Data Structures, Machine Learning, Cloud Systems, Distributed Architecture',
+  gradePercentage: '8.8 CGPA (85%)',
+  skillTags: ['Python', 'TypeScript', 'React', 'Machine Learning', 'Data Structures', 'System Design', 'SQL']
 };
 
-const defaultFiroBScores: FiroBScores = { EI: 38, WI: 42, EC: 44, WC: 40, EA: 36, WA: 45 };
-const defaultTraitScores: CustomTraitScores = { Analytical: 12, Technical: 10, Creative: 8, Leadership: 7, People: 6 };
+const generateDemoFiroBAnswers = (): Record<number, number> => {
+  const ans: Record<number, number> = {};
+  for (let i = 1; i <= 54; i++) {
+    ans[i] = ((i * 7) % 4) + 3; // generates realistic distribution 3, 4, 5, 6
+  }
+  return ans;
+};
+
+const generateDemoCustomAnswers = (): Record<number, string> => {
+  const ans: Record<number, string> = {};
+  const options = ['a', 'b', 'c', 'd'];
+  for (let i = 1; i <= 30; i++) {
+    ans[i] = options[(i * 3) % 4];
+  }
+  return ans;
+};
+
+const emptyFiroBScores: FiroBScores = { EI: 0, WI: 0, EC: 0, WC: 0, EA: 0, WA: 0 };
+const emptyTraitScores: CustomTraitScores = { Analytical: 0, Creative: 0, Leadership: 0, Technical: 0, People: 0 };
 
 const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
 
 export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>(() => {
     const saved = localStorage.getItem('cc_personal');
-    return saved ? JSON.parse(saved) : defaultPersonal;
+    return saved ? JSON.parse(saved) : emptyPersonal;
   });
 
   const [academicDetails, setAcademicDetails] = useState<AcademicDetails>(() => {
     const saved = localStorage.getItem('cc_academic');
-    return saved ? JSON.parse(saved) : defaultAcademic;
+    return saved ? JSON.parse(saved) : emptyAcademic;
   });
 
   const [firoBAnswers, setFiroBAnswers] = useState<Record<number, number>>(() => {
@@ -136,11 +174,14 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.setItem('cc_custom_complete', isCustomComplete ? 'true' : 'false');
   }, [isCustomComplete]);
 
+  // Accurate real score aggregation from real answers
   const calculateFiroBScores = (): FiroBScores => {
     const scores: FiroBScores = { EI: 0, WI: 0, EC: 0, WC: 0, EA: 0, WA: 0 };
     FIRO_B_QUESTIONS.forEach(q => {
-      const val = firoBAnswers[q.id] || 4;
-      scores[q.category] += val;
+      const val = firoBAnswers[q.id];
+      if (val !== undefined) {
+        scores[q.category] += val;
+      }
     });
     return scores;
   };
@@ -159,11 +200,49 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return traits;
   };
 
-  const firoBScores = Object.keys(firoBAnswers).length > 0 ? calculateFiroBScores() : defaultFiroBScores;
-  const customTraitScores = Object.keys(customAnswers).length > 0 ? calculateTraitScores() : defaultTraitScores;
+  const firoBScores = Object.keys(firoBAnswers).length > 0 ? calculateFiroBScores() : emptyFiroBScores;
+  const customTraitScores = Object.keys(customAnswers).length > 0 ? calculateTraitScores() : emptyTraitScores;
 
-  const isProfileComplete = Boolean(personalDetails.name && personalDetails.email && academicDetails.educationLevel);
+  const isProfileComplete = Boolean(personalDetails.name && personalDetails.email);
   const isAssessmentComplete = isFiroBComplete && isCustomComplete;
+
+  // Dynamic Career Rankings computed from Real User Responses
+  const rankedCareers: CareerProfile[] = CAREER_DATABASE.map(career => {
+    let score = 70; // baseline
+
+    if (career.cluster === 'Data & Analytics') {
+      score += (customTraitScores.Analytical * 2.5) + (customTraitScores.Technical * 1.5);
+      if (firoBScores.WC > firoBScores.EC) score += 4;
+    } else if (career.cluster === 'Software & Cloud Engineering') {
+      score += (customTraitScores.Technical * 2.5) + (customTraitScores.Analytical * 1.5);
+      if (firoBScores.EC > 20) score += 3;
+    } else if (career.cluster === 'Product & Strategic Management') {
+      score += (customTraitScores.Leadership * 2.5) + (customTraitScores.People * 1.5);
+      if (firoBScores.EI > 20) score += 5;
+    } else if (career.cluster === 'Design & Creative Technology') {
+      score += (customTraitScores.Creative * 3) + (customTraitScores.People * 1);
+    }
+
+    // Boost based on matched skills from real user input
+    if (academicDetails.skillTags && academicDetails.skillTags.length > 0) {
+      const matched = career.requiredSkills.filter(req =>
+        academicDetails.skillTags.some(tag => req.toLowerCase().includes(tag.toLowerCase()) || tag.toLowerCase().includes(req.toLowerCase()))
+      );
+      score += matched.length * 2;
+    }
+
+    const clamped = Math.min(99, Math.max(65, Math.round(score)));
+    return { ...career, matchScore: clamped };
+  }).sort((a, b) => b.matchScore - a.matchScore);
+
+  // Dynamic Clusters match percentage
+  const rankedClusters = CAREER_CLUSTERS.map(cluster => {
+    const clusterCareers = rankedCareers.filter(c => c.cluster === cluster.name);
+    const avgScore = clusterCareers.length > 0
+      ? Math.round(clusterCareers.reduce((acc, c) => acc + c.matchScore, 0) / clusterCareers.length)
+      : 80;
+    return { ...cluster, matchPercentage: avgScore };
+  }).sort((a, b) => b.matchPercentage - a.matchPercentage);
 
   const updatePersonalDetails = (details: Partial<PersonalDetails>) => {
     setPersonalDetails(prev => ({ ...prev, ...details }));
@@ -211,14 +290,37 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setCustomAnswers({});
     setIsFiroBComplete(false);
     setIsCustomComplete(false);
+    setPersonalDetails(emptyPersonal);
+    setAcademicDetails(emptyAcademic);
+    localStorage.removeItem('cc_personal');
+    localStorage.removeItem('cc_academic');
     localStorage.removeItem('cc_firob_answers');
     localStorage.removeItem('cc_custom_answers');
     localStorage.removeItem('cc_firob_complete');
     localStorage.removeItem('cc_custom_complete');
   };
 
+  const loadDemoUser = () => {
+    const firoB = generateDemoFiroBAnswers();
+    const custom = generateDemoCustomAnswers();
+
+    setPersonalDetails(demoPersonal);
+    setAcademicDetails(demoAcademic);
+    setFiroBAnswers(firoB);
+    setCustomAnswers(custom);
+    setIsFiroBComplete(true);
+    setIsCustomComplete(true);
+
+    localStorage.setItem('cc_personal', JSON.stringify(demoPersonal));
+    localStorage.setItem('cc_academic', JSON.stringify(demoAcademic));
+    localStorage.setItem('cc_firob_answers', JSON.stringify(firoB));
+    localStorage.setItem('cc_custom_answers', JSON.stringify(custom));
+    localStorage.setItem('cc_firob_complete', 'true');
+    localStorage.setItem('cc_custom_complete', 'true');
+  };
+
   const getCareerById = (id: string) => {
-    return CAREER_DATABASE.find(c => c.id === id);
+    return rankedCareers.find(c => c.id === id) || CAREER_DATABASE.find(c => c.id === id);
   };
 
   return (
@@ -234,6 +336,8 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isFiroBComplete,
         isCustomComplete,
         isAssessmentComplete,
+        rankedCareers,
+        rankedClusters,
         updatePersonalDetails,
         updateAcademicDetails,
         addSkillTag,
@@ -243,6 +347,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         completeFiroB,
         completeCustom,
         resetAssessment,
+        loadDemoUser,
         getCareerById
       }}
     >

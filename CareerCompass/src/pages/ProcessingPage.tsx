@@ -110,10 +110,10 @@ export const ProcessingPage: React.FC = () => {
       {isComplete && (
         <div className="pt-4 animate-fade-in">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/assessment/unlock')}
             className="btn-terracotta inline-flex items-center gap-3 px-8 py-4 rounded-xl text-base font-semibold shadow-lg group cursor-pointer"
           >
-            <span>View Career Profile Dashboard</span>
+            <span>Unlock Your Career Profile</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

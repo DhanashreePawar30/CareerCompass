@@ -12,25 +12,39 @@ export const AssessmentHubPage: React.FC = () => {
     customAnswers,
     isFiroBComplete,
     isCustomComplete,
-    resetAssessment
+    resetAssessment,
+    loadDemoUser
   } = useAssessment();
 
   const firoBCount = Object.keys(firoBAnswers).length;
   const customCount = Object.keys(customAnswers).length;
+
+  const handleLoadDemo = () => {
+    loadDemoUser();
+    navigate('/dashboard');
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       
       {/* Header */}
       <div className="text-center space-y-4 max-w-2xl mx-auto">
-        <span className="badge-terracotta px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
-          Step 02 & 03 of Pipeline
-        </span>
+        <div className="flex items-center justify-center gap-2">
+          <span className="badge-terracotta px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+            Step 02 & 03 of Pipeline
+          </span>
+          <button
+            onClick={handleLoadDemo}
+            className="px-3 py-1 rounded-full bg-white border border-[#E5E2D9] text-[#1E3A34] hover:bg-[#F2F0E6] text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer"
+          >
+            <span>⚡ Load Demo User</span>
+          </button>
+        </div>
         <h1 className="font-editorial text-4xl font-bold text-[#1E3A34]">
           Assessment Selection Hub
         </h1>
         <p className="text-[#5A6E68] text-base leading-relaxed">
-          Complete both assessments to generate your multi-dimensional career fit profile. You can complete them in any order.
+          Complete both assessments to generate your multi-dimensional career fit profile. You can complete them in any order, or load a demo profile to test immediately.
         </p>
       </div>
 

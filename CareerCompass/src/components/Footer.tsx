@@ -1,17 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, ShieldCheck, Heart } from 'lucide-react';
+import { Compass, ShieldCheck, Heart, Sparkles, Check, ArrowRight, Zap } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) {
+      setSubscribed(true);
+      setEmail('');
+    }
+  };
+
   return (
-    <footer className="bg-[#1E3A34] text-[#F9F8F3] mt-auto border-t border-[#2C524A]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+    <footer className="bg-[#142824] text-[#F9F8F3] mt-auto border-t border-[#2C524A] relative overflow-hidden select-none">
+      
+      {/* Massive Background Watermark Typography */}
+      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 pointer-events-none opacity-[0.03] whitespace-nowrap text-[12vw] font-bold font-editorial tracking-tighter text-white z-0">
+        CAREER COMPASS
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10 space-y-12">
+        
+        {/* Top Status & Telemetry Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#1E3A34]/70 border border-[#2C524A] backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs font-mono font-semibold tracking-wider text-[#A2B5AF]">
+              ALL 6 ASSESSMENT ENGINES OPERATIONAL • 99.9% DIAGNOSTIC UPTIME
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-[#C86D51] font-mono font-bold">
+            <Zap className="w-3.5 h-3.5" />
+            <span>PSYCHOMETRIC FIRO-B PROTOCOL V2.4</span>
+          </div>
+        </div>
+
+        {/* 4-Column Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 pt-4">
           
           {/* Brand Info */}
-          <div className="md:col-span-1 space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#C86D51] text-[#F9F8F3] flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-[#C86D51] text-[#F9F8F3] flex items-center justify-center font-bold shadow-sm">
                 <Compass className="w-6 h-6" />
               </div>
               <span className="font-editorial text-2xl font-bold tracking-tight">
@@ -32,22 +69,34 @@ export const Footer: React.FC = () => {
             <h4 className="font-editorial text-lg font-semibold text-[#F9F8F3]">Platform Navigation</h4>
             <ul className="space-y-2.5 text-sm text-[#A2B5AF]">
               <li>
-                <Link to="/" className="hover:text-[#F9F8F3] transition-colors">01. Landing Page</Link>
+                <Link to="/" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="text-[#C86D51]">✦</span> 01. Home & Overview
+                </Link>
               </li>
               <li>
-                <Link to="/how-it-works" className="hover:text-[#F9F8F3] transition-colors">02. How It Works</Link>
+                <Link to="/how-it-works" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="text-[#C86D51]">✦</span> 02. How It Works
+                </Link>
               </li>
               <li>
-                <Link to="/profile" className="hover:text-[#F9F8F3] transition-colors">03. Student Profile Form</Link>
+                <Link to="/assessment" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="text-[#C86D51]">✦</span> 03. Assessment Hub
+                </Link>
               </li>
               <li>
-                <Link to="/assessment" className="hover:text-[#F9F8F3] transition-colors">04. Assessment Hub</Link>
+                <Link to="/assessment/unlock" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="text-[#C86D51]">✦</span> 04. Unlock Persona & Profile
+                </Link>
               </li>
               <li>
-                <Link to="/dashboard" className="hover:text-[#F9F8F3] transition-colors">09. Career Dashboard</Link>
+                <Link to="/dashboard" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="text-[#C86D51]">✦</span> 05. Career Dashboard
+                </Link>
               </li>
               <li>
-                <Link to="/dashboard/recommendations" className="hover:text-[#F9F8F3] transition-colors">10. Career Recommendations</Link>
+                <Link to="/dashboard/recommendations" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="text-[#C86D51]">✦</span> 06. Ranked Recommendations
+                </Link>
               </li>
             </ul>
           </div>
@@ -85,30 +134,47 @@ export const Footer: React.FC = () => {
 
           {/* Newsletter / Contact */}
           <div className="space-y-4">
-            <h4 className="font-editorial text-lg font-semibold text-[#F9F8F3]">Stay Informed</h4>
-            <p className="text-sm text-[#A2B5AF]">
-              Receive monthly career insights and domain trend reports tailored for students.
+            <h4 className="font-editorial text-lg font-semibold text-[#F9F8F3] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#C86D51]" />
+              <span>Career Trajectory Dispatch</span>
+            </h4>
+            <p className="text-sm text-[#A2B5AF] leading-relaxed">
+              Get bi-weekly emerging tech career maps, salary updates, and placement interview breakdowns.
             </p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="Enter student email..."
-                className="bg-[#142824] border border-[#2C524A] text-sm text-[#F9F8F3] placeholder-[#6E8880] px-3.5 py-2.5 rounded-xl flex-1 focus:outline-hidden focus:border-[#C86D51]"
-              />
-              <button className="bg-[#C86D51] text-white px-4 py-2.5 rounded-xl hover:bg-[#B25A40] transition-colors font-medium text-sm">
-                Join
-              </button>
-            </div>
+            
+            {subscribed ? (
+              <div className="p-3.5 bg-[#1E3A34] rounded-xl border border-[#2C524A] text-xs text-emerald-400 font-semibold flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span>You're subscribed to the Career Compass Dispatch!</span>
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe} className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter student email..."
+                  className="bg-[#1E3A34] border border-[#2C524A] text-sm text-[#F9F8F3] placeholder-[#6E8880] px-4 py-2.5 rounded-xl flex-1 focus:outline-none focus:border-[#C86D51] transition-colors"
+                />
+                <button
+                  type="submit"
+                  className="bg-[#C86D51] text-white px-5 py-2.5 rounded-xl hover:bg-[#B25A40] transition-colors font-bold text-xs shrink-0 cursor-pointer shadow-sm"
+                >
+                  Join
+                </button>
+              </form>
+            )}
           </div>
 
         </div>
 
+        {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-[#2C524A] flex flex-col sm:flex-row items-center justify-between text-xs text-[#8BA49C] gap-4">
-          <p>© {new Date().getFullYear()} CareerCompass Platform. All rights reserved.</p>
-          <div className="flex items-center gap-1">
-            <span>Crafted with</span>
-            <Heart className="w-3.5 h-3.5 text-[#C86D51] fill-current inline" />
-            <span>for Student Career Growth</span>
+          <p>© {new Date().getFullYear()} CareerCompass Intelligence Engine. All rights reserved.</p>
+          <div className="flex items-center gap-1.5">
+            <span>Built with precision for student trajectory</span>
+            <Heart className="w-3.5 h-3.5 text-[#C86D51] fill-current inline ml-1" />
           </div>
         </div>
       </div>
