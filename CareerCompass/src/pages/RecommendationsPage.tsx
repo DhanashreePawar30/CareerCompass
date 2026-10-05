@@ -7,7 +7,7 @@ import { calculateArchetype } from '../data/archetypes';
 import { ComparisonDrawer } from '../components/ComparisonDrawer';
 
 export const RecommendationsPage: React.FC = () => {
-  const { personalDetails, firoBScores, customTraitScores, rankedCareers, rankedClusters, isAssessmentComplete } = useAssessment();
+  const { personalDetails, firoBScores, customTraitScores, rankedCareers, rankedClusters, isAssessmentComplete, firoBAiInsight } = useAssessment();
   const archetype = calculateArchetype(firoBScores, customTraitScores);
 
   const [compareList, setCompareList] = useState<CareerProfile[]>([]);
@@ -154,7 +154,7 @@ export const RecommendationsPage: React.FC = () => {
                   <div className="space-y-2 pt-2">
                     <p className="text-xs font-bold uppercase text-[#1E3A34]">Top Specialized Roles:</p>
                     <div className="flex flex-wrap gap-2">
-                      {cluster.topCareers.map((role, rIdx) => (
+                      {cluster.topCareers.map((role: string, rIdx: number) => (
                         <span key={rIdx} className="bg-[#F2F0E6] text-[#1E3A34] px-3 py-1 rounded-lg text-xs font-semibold">
                           {role}
                         </span>
@@ -177,7 +177,12 @@ export const RecommendationsPage: React.FC = () => {
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#C86D51] shrink-0 mt-0.5" />
-                      <span><strong>FIRO-B Interpersonal Fit:</strong> Control and affection scores indicate natural alignment with this work environment.</span>
+                      <span>
+                        <strong>FIRO-B Interpersonal Fit:</strong>{' '}
+                        {firoBAiInsight
+                          ? firoBAiInsight.firoBInterpretation.interpersonalStyle
+                          : 'Control and affection scores indicate natural alignment with this work environment.'}
+                      </span>
                     </li>
                     <li className="flex items-start gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-[#C86D51] shrink-0 mt-0.5" />

@@ -48,6 +48,17 @@ export const FiroBInterpretationSchema = z.object({
   workStyle: z.string(),
 });
 
+export const IdentityInsightSchema = z.object({
+  headline: z.string(),
+  summary: z.string(),
+});
+
+export const InterpersonalProfileSchema = z.object({
+  inclusion: z.string(),
+  control: z.string(),
+  affection: z.string(),
+});
+
 export const DimensionDetailSchema = z.object({
   summary: z.string(),
   strength: z.string(),
@@ -60,10 +71,17 @@ export const FiroBDimensionsSchema = z.object({
   affection: DimensionDetailSchema,
 });
 
+export const ArchetypeInsightSchema = z.object({
+  explanation: z.string(),
+  workplaceStrengths: z.array(z.string()),
+  developmentAreas: z.array(z.string()),
+});
+
 export const WorkEnvironmentFitSchema = z.object({
   preferredEnvironment: z.string(),
   collaborationStyle: z.string(),
   communicationStyle: z.string(),
+  responsibilityStyle: z.string(),
 });
 
 export const CareerGuidanceSchema = z.object({
@@ -73,12 +91,16 @@ export const CareerGuidanceSchema = z.object({
 
 export const FiroBSynthesisResultSchema = z.object({
   firoBInterpretation: FiroBInterpretationSchema,
+  identityInsight: IdentityInsightSchema,
+  interpersonalProfile: InterpersonalProfileSchema,
   dimensions: FiroBDimensionsSchema,
-  keyStrengths: z.array(z.string()),
-  developmentAreas: z.array(z.string()),
+  archetypeInsight: ArchetypeInsightSchema,
   workEnvironmentFit: WorkEnvironmentFitSchema,
   careerGuidance: CareerGuidanceSchema,
   actionableSuggestions: z.array(z.string()),
+  keyStrengths: z.array(z.string()).optional().default([]),
+  developmentAreas: z.array(z.string()).optional().default([]),
 });
 
 export type FiroBSynthesisResult = z.infer<typeof FiroBSynthesisResultSchema>;
+

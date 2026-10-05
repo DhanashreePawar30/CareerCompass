@@ -317,7 +317,15 @@ export const CAREER_DATABASE: CareerProfile[] = [
   }
 ];
 
-export const CAREER_CLUSTERS = [
+export interface CareerCluster {
+  name: string;
+  matchPercentage: number;
+  iconName: string;
+  description: string;
+  topCareers: string[];
+}
+
+export const CAREER_CLUSTERS: CareerCluster[] = [
   {
     name: 'Data & Analytics',
     matchPercentage: 87,

@@ -4,6 +4,17 @@ export interface FiroBInterpretation {
   workStyle: string;
 }
 
+export interface IdentityInsight {
+  headline: string;
+  summary: string;
+}
+
+export interface InterpersonalProfile {
+  inclusion: string;
+  control: string;
+  affection: string;
+}
+
 export interface DimensionDetail {
   summary: string;
   strength: string;
@@ -16,10 +27,17 @@ export interface FiroBDimensions {
   affection: DimensionDetail;
 }
 
+export interface ArchetypeInsight {
+  explanation: string;
+  workplaceStrengths: string[];
+  developmentAreas: string[];
+}
+
 export interface WorkEnvironmentFit {
   preferredEnvironment: string;
   collaborationStyle: string;
   communicationStyle: string;
+  responsibilityStyle: string;
 }
 
 export interface CareerGuidance {
@@ -29,9 +47,12 @@ export interface CareerGuidance {
 
 export interface FiroBSynthesisResult {
   firoBInterpretation: FiroBInterpretation;
+  identityInsight: IdentityInsight;
+  interpersonalProfile: InterpersonalProfile;
   dimensions: FiroBDimensions;
-  keyStrengths: string[];
-  developmentAreas: string[];
+  archetypeInsight: ArchetypeInsight;
+  keyStrengths?: string[];
+  developmentAreas?: string[];
   workEnvironmentFit: WorkEnvironmentFit;
   careerGuidance: CareerGuidance;
   actionableSuggestions: string[];
@@ -74,11 +95,8 @@ function generateClientFallback(payload: FiroBSynthesisRequestPayload): FiroBSyn
   const { EI, WI, EC, WC, EA, WA } = payload.firoBScores;
 
   const isHighEI = EI >= 27;
-  const isHighWI = WI >= 27;
   const isHighEC = EC >= 27;
-  const isHighWC = WC >= 27;
   const isHighEA = EA >= 27;
-  const isHighWA = WA >= 27;
 
   const topCareersText = payload.careerResults && payload.careerResults.length > 0
     ? payload.careerResults.slice(0, 3).map(c => c.title || c.id || c.careerId).filter(Boolean).join(', ')
@@ -86,43 +104,93 @@ function generateClientFallback(payload: FiroBSynthesisRequestPayload): FiroBSyn
 
   const archetypeTitle = payload.archetype?.title || payload.archetype?.name || 'Systems Pioneer';
 
+  const inclusionSummary = isHighEI
+    ? 'High drive to initiate team activities and social engagement.'
+    : 'Selective, focused approach to team interaction with emphasis on deep-work autonomy.';
+
+  const controlSummary = isHighEC
+    ? 'Preference for high autonomy, strategic vision, and decision ownership.'
+    : 'Value clear guidelines, mentorship, and defined operational boundaries.';
+
+  const affectionSummary = isHighEA
+    ? 'Fosters warm, empathetic connections and psychologically safe teams.'
+    : 'Objective, task-focused professional orientation centered on logical output.';
+
+  const identityHeadline = isHighEC
+    ? (isHighEI ? 'Strategic Team Catalyst' : 'Autonomous Systems Architect')
+    : (isHighEA ? 'Empathetic Collaborative Engineer' : 'Empirical Analytical Specialist');
+
+  const identitySummary = `You combine ${isHighEC ? 'decisive problem ownership' : 'structured domain discipline'} with ${isHighEI ? 'active collaborative engagement' : 'focused independent execution'}. Your FIRO-B pattern indicates an approach to work that values ${isHighEA ? 'relational trust and team harmony' : 'objective metrics and logical clarity'}.`;
+
+  const inclusionStrength = isHighEI ? 'Proactive networking and team cohesion.' : 'High independent focus and minimal susceptibility to groupthink.';
+  const inclusionDev = isHighEI ? 'Ensure dedicated focus time to avoid meeting fatigue.' : 'Initiate communication earlier during team sprints.';
+
+  const controlStrength = isHighEC ? 'Strategic ownership, clarity of direction, and executive initiative.' : 'Operational discipline, procedural compliance, and low friction with leadership.';
+  const controlDev = isHighEC ? 'Delegate operational tasks effectively to empower peers.' : 'Build confidence in stepping into decision-making roles.';
+
+  const affectionStrength = isHighEA ? 'Empathetic team leadership and trust building.' : 'Objective decision-making and resilience under pressure.';
+  const affectionDev = isHighEA ? 'Maintain objective boundaries during tough performance reviews.' : 'Acknowledge peer contributions explicitly.';
+
   return {
     firoBInterpretation: {
       overallProfile: `Your FIRO-B profile indicates a balanced interpersonal orientation aligned with ${archetypeTitle}. You combine empirical problem-solving with tailored workplace engagement.`,
       interpersonalStyle: `Inclusion: ${EI > WI ? 'Proactive' : 'Selective'}, Control: ${EC > WC ? 'Autonomous/Directing' : 'Structured/Guiding'}, Affection: ${EA > WA ? 'Expressive' : 'Objective'}.`,
       workStyle: `You perform best when project expectations are clear and communication is grounded in direct, evidence-based metrics.`
     },
+    identityInsight: {
+      headline: identityHeadline,
+      summary: identitySummary
+    },
+    interpersonalProfile: {
+      inclusion: inclusionSummary,
+      control: controlSummary,
+      affection: affectionSummary
+    },
     dimensions: {
       inclusion: {
-        summary: isHighEI ? 'High drive to initiate team activities and social engagement.' : 'Selective, focused approach to team interaction with emphasis on deep-work autonomy.',
-        strength: isHighEI ? 'Proactive networking and team cohesion.' : 'High independent focus and minimal susceptibility to groupthink.',
-        developmentArea: isHighEI ? 'Ensure dedicated focus time to avoid meeting fatigue.' : 'Initiate communication earlier during team sprints.'
+        summary: inclusionSummary,
+        strength: inclusionStrength,
+        developmentArea: inclusionDev
       },
       control: {
-        summary: isHighEC ? 'Preference for high autonomy, strategic vision, and decision ownership.' : 'Value clear guidelines, mentorship, and defined operational boundaries.',
-        strength: isHighEC ? 'Strategic ownership, clarity of direction, and executive initiative.' : 'Operational discipline, procedural compliance, and low friction with leadership.',
-        developmentArea: isHighEC ? 'Delegate operational tasks effectively to empower peers.' : 'Build confidence in stepping into decision-making roles.'
+        summary: controlSummary,
+        strength: controlStrength,
+        developmentArea: controlDev
       },
       affection: {
-        summary: isHighEA ? 'Fosters warm, empathetic connections and psychologically safe teams.' : 'Objective, task-focused professional orientation centered on logical output.',
-        strength: isHighEA ? 'Empathetic team leadership and trust building.' : 'Objective decision-making and resilience under pressure.',
-        developmentArea: isHighEA ? 'Maintain objective boundaries during tough performance reviews.' : 'Acknowledge peer contributions explicitly.'
+        summary: affectionSummary,
+        strength: affectionStrength,
+        developmentArea: affectionDev
       }
     },
+    archetypeInsight: {
+      explanation: `Your interpersonal profile (EI:${EI}, WI:${WI}, EC:${EC}, WC:${WC}, EA:${EA}, WA:${WA}) aligns naturally with your derived archetype ${archetypeTitle}. Your pattern highlights a preference for ${isHighEC ? 'outcome ownership and strategic autonomy' : 'structured process discipline and peer alignment'}.`,
+      workplaceStrengths: [
+        inclusionStrength,
+        controlStrength,
+        affectionStrength
+      ],
+      developmentAreas: [
+        inclusionDev,
+        controlDev,
+        affectionDev
+      ]
+    },
     keyStrengths: [
-      isHighEC ? 'Strategic ownership and decisive execution' : 'High operational discipline and procedural accuracy',
-      isHighEI ? 'Proactive team building and communication' : 'Focused individual execution and deep-work stamina',
-      isHighEA ? 'Empathetic trust building and collaboration' : 'Objective, evidence-grounded decision making'
+      inclusionStrength,
+      controlStrength,
+      affectionStrength
     ],
     developmentAreas: [
-      isHighEC ? 'Empower peers by delegating sub-tasks' : 'Step up to resolve technical deadlocks independently',
-      isHighEI ? 'Protect calendar focus blocks for execution' : 'Proactively communicate milestone status to team leads',
-      isHighEA ? 'Balance warm empathy with firm performance standards' : 'Explicitly celebrate team wins and peer contributions'
+      inclusionDev,
+      controlDev,
+      affectionDev
     ],
     workEnvironmentFit: {
       preferredEnvironment: `Environments that balance focus time with structured collaborative milestones, particularly in ${topCareersText}.`,
       collaborationStyle: isHighEI || isHighEA ? 'Collaborative squad dynamic with active peer alignment.' : 'Autonomous execution with asynchronous milestone check-ins.',
-      communicationStyle: isHighEC ? 'Direct, objective, and outcome-oriented communication.' : 'Structured, clear, and consensus-oriented communication.'
+      communicationStyle: isHighEC ? 'Direct, objective, and outcome-oriented communication.' : 'Structured, clear, and consensus-oriented communication.',
+      responsibilityStyle: isHighEC ? 'High outcome ownership with preference for strategic accountability.' : 'Shared team responsibility with defined operational boundaries.'
     },
     careerGuidance: {
       summary: `Your interpersonal profile aligns strongly with work environments requiring ${isHighEC ? 'strategic decision-making and ownership' : 'collaborative execution and domain mastery'}.`,
@@ -166,3 +234,4 @@ export async function fetchFiroBSynthesis(payload: FiroBSynthesisRequestPayload)
     return generateClientFallback(payload);
   }
 }
+

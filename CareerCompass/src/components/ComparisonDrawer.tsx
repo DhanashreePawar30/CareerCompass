@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Check, ArrowRight, DollarSign, Briefcase, GraduationCap } from 'lucide-react';
+import { X, ArrowRight, DollarSign, Briefcase, GraduationCap } from 'lucide-react';
 import type { CareerProfile } from '../data/careerDatabase';
 import { Link } from 'react-router-dom';
 

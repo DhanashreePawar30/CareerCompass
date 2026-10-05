@@ -4,7 +4,8 @@ import { CUSTOM_QUESTIONS } from '../data/customQuestions';
 import { CAREER_DATABASE, CAREER_CLUSTERS } from '../data/careerDatabase';
 import type { CareerProfile, CareerCluster } from '../data/careerDatabase';
 import { calculateArchetype } from '../data/archetypes';
-import { fetchFiroBSynthesis, FiroBSynthesisResult } from '../services/aiService';
+import { fetchFiroBSynthesis } from '../services/aiService';
+import type { FiroBSynthesisResult } from '../services/aiService';
 
 
 export interface PersonalDetails {

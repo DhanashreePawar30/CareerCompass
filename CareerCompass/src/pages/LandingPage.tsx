@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Users, Brain, Target, Briefcase, GraduationCap, Award, Sparkles, ChevronRight, Compass, ShieldCheck, Zap, Layers, Flame, TrendingUp } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Users, Brain, Target, Briefcase, GraduationCap, Award, Sparkles, Compass, Zap, Flame, TrendingUp } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, ShieldCheck, Heart, Sparkles, Check, ArrowRight, Zap } from 'lucide-react';
+import { Compass, ShieldCheck, Heart, Sparkles, Check, Zap } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('');

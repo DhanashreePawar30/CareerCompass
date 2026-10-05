@@ -4,12 +4,28 @@ import {
   ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell
 } from 'recharts';
-import { Sparkles, ArrowRight, Compass, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, Compass, ShieldCheck, CheckCircle2, BrainCircuit, Lightbulb, Target, UserCheck, Loader2 } from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateArchetype } from '../data/archetypes';
 
 export const DashboardPage: React.FC = () => {
-  const { personalDetails, academicDetails, firoBScores, customTraitScores, rankedCareers, isAssessmentComplete } = useAssessment();
+  const {
+    personalDetails,
+    academicDetails,
+    firoBScores,
+    customTraitScores,
+    rankedCareers,
+    isAssessmentComplete,
+    firoBAiInsight,
+    isLoadingAi,
+    generateFiroBAiInsight
+  } = useAssessment();
+
+  React.useEffect(() => {
+    if (isAssessmentComplete && !firoBAiInsight && !isLoadingAi) {
+      generateFiroBAiInsight();
+    }
+  }, [isAssessmentComplete, firoBAiInsight, isLoadingAi]);
 
   // Trait Radar Data derived from real scores
   const radarData = [
@@ -190,6 +206,170 @@ export const DashboardPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* AI Personalized FIRO-B Insights Card */}
+      {isLoadingAi && !firoBAiInsight && (
+        <div className="editorial-card p-6 bg-white border border-[#E5E2D9] flex items-center justify-center gap-3 text-[#1E3A34]">
+          <Loader2 className="w-5 h-5 text-[#C86D51] animate-spin" />
+          <span className="text-sm font-semibold">Synthesizing personalized FIRO-B career insights...</span>
+        </div>
+      )}
+
+      {firoBAiInsight && (
+        <div className="editorial-card p-8 sm:p-10 space-y-8 bg-white border border-[#E5E2D9] shadow-md relative">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E2D9] pb-6">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full badge-terracotta text-xs font-bold uppercase tracking-wider">
+                <BrainCircuit className="w-4 h-4 text-[#C86D51]" />
+                <span>AI-Powered FIRO-B Neural Synthesis</span>
+              </div>
+              <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#1E3A34]">
+                Personalized Interpersonal & Work Style Interpretation
+              </h2>
+            </div>
+            <span className="text-xs font-mono font-bold text-[#5A6E68] bg-[#F9F8F3] px-3 py-1.5 rounded-lg border border-[#E5E2D9]">
+              Enrichment Layer Active
+            </span>
+          </div>
+
+          {/* Identity Insight Banner ("What kind of person am I?") */}
+          {firoBAiInsight.identityInsight && (
+            <div className="bg-[#1E3A34] text-[#F9F8F3] p-6 rounded-2xl space-y-2 border border-[#2C524A]">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#C86D51]" />
+                <span className="text-xs font-bold uppercase tracking-wider text-[#C86D51]">
+                  Identity Insight: {firoBAiInsight.identityInsight.headline}
+                </span>
+              </div>
+              <p className="text-sm text-[#A2B5AF] leading-relaxed">
+                {firoBAiInsight.identityInsight.summary}
+              </p>
+            </div>
+          )}
+
+          {/* Overview Profile & Archetype Explanation */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-[#F9F8F3] p-5 rounded-2xl border border-[#E5E2D9] space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#C86D51]">Overall Persona</p>
+              <p className="text-sm text-[#1E3A34] leading-relaxed">{firoBAiInsight.firoBInterpretation.overallProfile}</p>
+            </div>
+            <div className="bg-[#F9F8F3] p-5 rounded-2xl border border-[#E5E2D9] space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#1E3A34]">Interpersonal Orientation</p>
+              <p className="text-sm text-[#5A6E68] leading-relaxed">{firoBAiInsight.firoBInterpretation.interpersonalStyle}</p>
+            </div>
+            <div className="bg-[#F9F8F3] p-5 rounded-2xl border border-[#E5E2D9] space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#1E3A34]">Work Execution Style</p>
+              <p className="text-sm text-[#5A6E68] leading-relaxed">{firoBAiInsight.firoBInterpretation.workStyle}</p>
+            </div>
+          </div>
+
+          {/* Archetype Insight (AI explanation of the deterministic archetype) */}
+          {firoBAiInsight.archetypeInsight && (
+            <div className="p-6 rounded-2xl bg-[#FBF9F5] border border-[#C86D51]/30 space-y-3">
+              <h4 className="font-editorial text-lg font-bold text-[#1E3A34] flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#C86D51]" />
+                <span>Archetype Synthesis: {archetype.title}</span>
+              </h4>
+              <p className="text-xs text-[#5A6E68] leading-relaxed">
+                {firoBAiInsight.archetypeInsight.explanation}
+              </p>
+              {firoBAiInsight.archetypeInsight.workplaceStrengths && firoBAiInsight.archetypeInsight.workplaceStrengths.length > 0 && (
+                <div className="pt-2 flex flex-wrap gap-2 text-xs">
+                  <span className="font-bold text-[#1E3A34]">Workplace Strengths:</span>
+                  {firoBAiInsight.archetypeInsight.workplaceStrengths.map((str, idx) => (
+                    <span key={idx} className="bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-md border border-emerald-200 font-medium">
+                      ✓ {str}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3 Dimensional Cards: Inclusion, Control, Affection */}
+          <div className="space-y-4">
+            <h3 className="font-editorial text-xl font-bold text-[#1E3A34] flex items-center gap-2">
+              <Target className="w-5 h-5 text-[#C86D51]" />
+              <span>3-Vector Dimension Analysis</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Inclusion */}
+              <div className="p-6 rounded-2xl bg-[#FBF9F5] border border-[#E5E2D9] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-editorial font-bold text-base text-[#1E3A34]">Inclusion (EI + WI)</span>
+                  <span className="text-[11px] font-mono text-[#5A6E68]">EI: {firoBScores.EI} | WI: {firoBScores.WI}</span>
+                </div>
+                <p className="text-xs text-[#5A6E68] leading-relaxed">{firoBAiInsight.dimensions.inclusion.summary}</p>
+                <div className="pt-2 border-t border-[#E5E2D9] space-y-1.5 text-xs">
+                  <p className="text-emerald-800 font-medium">✓ <strong>Strength:</strong> {firoBAiInsight.dimensions.inclusion.strength}</p>
+                  <p className="text-amber-800 font-medium">⚑ <strong>Growth Area:</strong> {firoBAiInsight.dimensions.inclusion.developmentArea}</p>
+                </div>
+              </div>
+
+              {/* Control */}
+              <div className="p-6 rounded-2xl bg-[#FBF9F5] border border-[#E5E2D9] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-editorial font-bold text-base text-[#1E3A34]">Control (EC + WC)</span>
+                  <span className="text-[11px] font-mono text-[#5A6E68]">EC: {firoBScores.EC} | WC: {firoBScores.WC}</span>
+                </div>
+                <p className="text-xs text-[#5A6E68] leading-relaxed">{firoBAiInsight.dimensions.control.summary}</p>
+                <div className="pt-2 border-t border-[#E5E2D9] space-y-1.5 text-xs">
+                  <p className="text-emerald-800 font-medium">✓ <strong>Strength:</strong> {firoBAiInsight.dimensions.control.strength}</p>
+                  <p className="text-amber-800 font-medium">⚑ <strong>Growth Area:</strong> {firoBAiInsight.dimensions.control.developmentArea}</p>
+                </div>
+              </div>
+
+              {/* Affection */}
+              <div className="p-6 rounded-2xl bg-[#FBF9F5] border border-[#E5E2D9] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-editorial font-bold text-base text-[#1E3A34]">Affection (EA + WA)</span>
+                  <span className="text-[11px] font-mono text-[#5A6E68]">EA: {firoBScores.EA} | WA: {firoBScores.WA}</span>
+                </div>
+                <p className="text-xs text-[#5A6E68] leading-relaxed">{firoBAiInsight.dimensions.affection.summary}</p>
+                <div className="pt-2 border-t border-[#E5E2D9] space-y-1.5 text-xs">
+                  <p className="text-emerald-800 font-medium">✓ <strong>Strength:</strong> {firoBAiInsight.dimensions.affection.strength}</p>
+                  <p className="text-amber-800 font-medium">⚑ <strong>Growth Area:</strong> {firoBAiInsight.dimensions.affection.developmentArea}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Environment Fit & Actionable Suggestions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            <div className="bg-[#1E3A34] text-[#F9F8F3] p-6 rounded-2xl space-y-4">
+              <h4 className="font-editorial text-lg font-bold flex items-center gap-2 text-white">
+                <UserCheck className="w-5 h-5 text-[#C86D51]" />
+                <span>Work Environment & Responsibility Fit</span>
+              </h4>
+              <p className="text-xs text-[#A2B5AF] leading-relaxed">{firoBAiInsight.workEnvironmentFit.preferredEnvironment}</p>
+              <div className="space-y-2 pt-2 border-t border-[#2C524A] text-xs">
+                <p><strong className="text-white">Collaboration Style:</strong> {firoBAiInsight.workEnvironmentFit.collaborationStyle}</p>
+                <p><strong className="text-white">Communication Style:</strong> {firoBAiInsight.workEnvironmentFit.communicationStyle}</p>
+                {firoBAiInsight.workEnvironmentFit.responsibilityStyle && (
+                  <p><strong className="text-white">Responsibility Style:</strong> {firoBAiInsight.workEnvironmentFit.responsibilityStyle}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-[#F9F8F3] p-6 rounded-2xl border border-[#E5E2D9] space-y-4">
+              <h4 className="font-editorial text-lg font-bold text-[#1E3A34] flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-[#C86D51]" />
+                <span>Actionable Development Steps</span>
+              </h4>
+              <ul className="space-y-2.5 text-xs text-[#1E3A34]">
+                {firoBAiInsight.actionableSuggestions.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#C86D51] shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      )}
 
       {/* Top #1 Career Match Showcase Card */}
       <div className="editorial-card p-8 sm:p-12 space-y-8 bg-[#FBF9F5] border-2 border-[#C86D51]/40 relative overflow-hidden shadow-lg">
