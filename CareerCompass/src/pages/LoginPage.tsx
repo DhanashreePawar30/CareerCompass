@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Compass, Lock, Mail } from 'lucide-react';
+import { useAssessment } from '../context/AssessmentContext';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn } = useAssessment();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('cc_signed_in', 'true');
-    if (email.trim()) localStorage.setItem('cc_user_email', email.trim());
+    await signIn(email);
     navigate('/assessment');
   };
 

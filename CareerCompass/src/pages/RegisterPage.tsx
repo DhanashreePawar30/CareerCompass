@@ -14,6 +14,7 @@ import {
   User,
   Users,
 } from 'lucide-react';
+import { useAssessment } from '../context/AssessmentContext';
 
 const inputClass =
   'w-full px-4 py-2.5 rounded-lg bg-[#F9F8F3] border border-[#E5E2D9] text-sm text-[#1E3A34] placeholder:text-[#8A9893] focus:outline-none focus:border-[#C86D51] focus:ring-2 focus:ring-[#C86D51]/10 transition';
@@ -22,6 +23,7 @@ const selectClass = `${inputClass} appearance-none`;
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const { signIn } = useAssessment();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -33,24 +35,25 @@ export const RegisterPage: React.FC = () => {
   const [grade, setGrade] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    localStorage.setItem('cc_signed_in', 'true');
-    localStorage.setItem('cc_user_name', name.trim());
-    localStorage.setItem('cc_user_email', email.trim());
-    localStorage.setItem(
-      'cc_user_profile',
-      JSON.stringify({
-        phone: phone.trim(),
-        age,
-        gender,
-        educationLevel,
-        major: major.trim(),
-        subjects: subjects.trim(),
-        grade: grade.trim(),
-      })
-    );
+    const personal = {
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      age,
+      gender,
+    };
+    const academic = {
+      educationLevel,
+      courseStream: major.trim(),
+      keySubjects: subjects.trim(),
+      gradePercentage: grade.trim(),
+    };
+
+    // Switches to this account (keeping any progress it already has) and saves the profile
+    await signIn(personal.email, { personal, academic });
 
     navigate('/assessment');
   };

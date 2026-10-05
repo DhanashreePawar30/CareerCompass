@@ -17,6 +17,10 @@ import {
   Users,
   SlidersHorizontal,
   Heart,
+  Loader2,
+  Lightbulb,
+  UserCheck,
+  CheckCircle2,
 } from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
 
@@ -26,7 +30,16 @@ export const DashboardPage: React.FC = () => {
     academicDetails,
     firoBScores,
     isFiroBComplete,
+    firoBAiInsight,
+    isLoadingAi,
+    generateFiroBAiInsight
   } = useAssessment();
+
+  React.useEffect(() => {
+    if (isFiroBComplete && !firoBAiInsight && !isLoadingAi) {
+      generateFiroBAiInsight();
+    }
+  }, [isFiroBComplete, firoBAiInsight, isLoadingAi, generateFiroBAiInsight]);
 
   const firoBBarData = [
     { name: 'Expressed Inc.', score: firoBScores.EI, fill: '#1E3A34' },
@@ -387,6 +400,77 @@ const summary = (() => {
             </div>
           </div>
         </section>
+
+        {/* AI Insight Section */}
+        {isLoadingAi && (
+          <section className="bg-white p-8 rounded-3xl border border-[#E5E2D9] shadow-sm flex flex-col items-center justify-center gap-4">
+            <Loader2 className="w-8 h-8 text-[#C86D51] animate-spin" />
+            <p className="text-sm font-semibold text-[#1E3A34]">
+              Generating your personalized AI synthesis...
+            </p>
+          </section>
+        )}
+
+        {firoBAiInsight && !isLoadingAi && (
+          <section className="space-y-6 pt-4 border-t border-[#E5E2D9]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center shrink-0">
+                <Sparkles className="w-4.5 h-4.5 text-[#C86D51]" />
+              </div>
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-[0.12em] text-[#C86D51]">
+                  AI Synthesis
+                </span>
+                <h2 className="font-editorial text-2xl font-bold text-[#1E3A34] mt-1">
+                  Your Personalized Psychological Profile
+                </h2>
+              </div>
+            </div>
+
+            <div className="editorial-card p-6 sm:p-8 bg-white border border-[#E5E2D9] shadow-sm">
+              <h3 className="font-editorial text-xl font-bold text-[#1E3A34] mb-3">
+                Executive Summary
+              </h3>
+              <p className="text-sm text-[#5A6E68] leading-relaxed">
+                {firoBAiInsight.identityInsight?.summary || firoBAiInsight.firoBInterpretation?.overallProfile}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-[#1E3A34] text-[#F9F8F3] p-6 rounded-2xl space-y-4 shadow-sm">
+                <h4 className="font-editorial text-lg font-bold flex items-center gap-2 text-white">
+                  <UserCheck className="w-5 h-5 text-[#C86D51]" />
+                  <span>Work Environment Fit</span>
+                </h4>
+                <p className="text-xs text-[#A2B5AF] leading-relaxed">
+                  {firoBAiInsight.workEnvironmentFit.preferredEnvironment}
+                </p>
+                <div className="space-y-2 pt-3 border-t border-[#2C524A] text-xs">
+                  <p><strong className="text-white">Collaboration Style:</strong> {firoBAiInsight.workEnvironmentFit.collaborationStyle}</p>
+                  <p><strong className="text-white">Communication Style:</strong> {firoBAiInsight.workEnvironmentFit.communicationStyle}</p>
+                  {firoBAiInsight.workEnvironmentFit.responsibilityStyle && (
+                    <p><strong className="text-white">Responsibility Style:</strong> {firoBAiInsight.workEnvironmentFit.responsibilityStyle}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#F9F8F3] p-6 rounded-2xl border border-[#E5E2D9] shadow-sm">
+                <h4 className="font-editorial text-lg font-bold text-[#1E3A34] flex items-center gap-2 mb-4">
+                  <Lightbulb className="w-5 h-5 text-[#C86D51]" />
+                  <span>Actionable Suggestions</span>
+                </h4>
+                <ul className="space-y-3 text-xs text-[#1E3A34]">
+                  {firoBAiInsight.actionableSuggestions.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-[#C86D51] shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Career unlock */}
         <section className="rounded-2xl bg-[#1E3A34] text-[#F9F8F3] px-6 py-6 sm:px-7 sm:py-7 relative overflow-hidden shadow-lg">
