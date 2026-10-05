@@ -106,7 +106,7 @@ export const CustomQuestionPage: React.FC = () => {
 
         {/* Multiple Choice Option Cards */}
         <div className="space-y-3.5 pt-2">
-          {question.options.map((opt, optIdx) => {
+          {question.options.map((opt) => {
             const isSelected = selectedOptionId === opt.id;
             return (
               <button

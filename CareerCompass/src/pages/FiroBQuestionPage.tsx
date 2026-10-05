@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, CheckCircle2, HeartHandshake, Command } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  HeartHandshake,
+  Keyboard,
+} from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
 import { FIRO_B_QUESTIONS, LIKERT_OPTIONS } from '../data/firoBQuestions';
 import { ProgressBar } from '../components/ProgressBar';
@@ -8,20 +14,30 @@ import { useAssessmentKeyboard } from '../hooks/useAssessmentKeyboard';
 
 export const FiroBQuestionPage: React.FC = () => {
   const navigate = useNavigate();
-  const { firoBAnswers, setFiroBAnswer, completeFiroB, isCustomComplete } = useAssessment();
+  const { firoBAnswers, setFiroBAnswer, completeFiroB } = useAssessment();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showNextTestPrompt, setShowNextTestPrompt] = useState(false);
 
   const question = FIRO_B_QUESTIONS[currentIndex];
   const selectedValue = firoBAnswers[question.id] || null;
+  const totalQuestions = FIRO_B_QUESTIONS.length;
+  const progress = ((currentIndex + 1) / totalQuestions) * 100;
+
+  const moveNext = () => {
+    if (currentIndex < totalQuestions - 1) {
+      setCurrentIndex(prev => prev + 1);
+    } else {
+      completeFiroB();
+      navigate('/assessment/complete');
+    }
+  };
 
   const handleSelectOption = (value: number) => {
     setFiroBAnswer(question.id, value);
-    if (currentIndex < FIRO_B_QUESTIONS.length - 1) {
-      setTimeout(() => {
-        setCurrentIndex(prev => prev + 1);
-      }, 200);
-    }
+
+    // Brief visual feedback, then automatically continue.
+    setTimeout(() => {
+      moveNext();
+    }, 180);
   };
 
   const handlePrevious = () => {
@@ -31,19 +47,11 @@ export const FiroBQuestionPage: React.FC = () => {
   };
 
   const handleNext = () => {
-    if (currentIndex < FIRO_B_QUESTIONS.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      completeFiroB();
-      if (isCustomComplete) {
-        navigate('/assessment/complete');
-      } else {
-        setShowNextTestPrompt(true);
-      }
+    if (selectedValue) {
+      moveNext();
     }
   };
 
-  // Keyboard navigation: 1-6 keys, ArrowLeft, ArrowRight/Enter
   useAssessmentKeyboard({
     onSelectOption: handleSelectOption,
     onPrevious: handlePrevious,
@@ -53,156 +61,177 @@ export const FiroBQuestionPage: React.FC = () => {
   });
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
-      
-      {/* Top Header & Sticky Progress */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center font-bold text-xs shadow-xs">
-              <HeartHandshake className="w-5 h-5 text-[#C86D51]" />
-            </span>
-            <span className="font-editorial font-bold text-[#1E3A34] text-lg sm:text-xl">
-              FIRO-B Interpersonal Test
-            </span>
-          </div>
+    <div className="min-h-[calc(100vh-64px)] bg-[#F9F8F3]">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-          <span className="badge-forest px-3.5 py-1 rounded-full text-xs font-semibold">
-            {question.categoryLabel}
-          </span>
-        </div>
+        {/* Compact assessment header */}
+        <header className="space-y-3.5 mb-5 sm:mb-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-[#1E3A34] flex items-center justify-center shadow-sm shrink-0">
+                <HeartHandshake className="w-4.5 h-4.5 text-[#C86D51]" />
+              </div>
 
-        <ProgressBar
-          current={currentIndex + 1}
-          total={FIRO_B_QUESTIONS.length}
-          label="FIRO-B Question Progress"
-        />
-      </div>
-
-      {/* Main Single Question Card */}
-      <div className="editorial-card p-6 sm:p-12 space-y-8 shadow-md transition-all animate-fade-in bg-white border border-[#E5E2D9]">
-        
-        {/* Question Counter & Keyboard Hint */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs font-mono font-bold text-[#C86D51]">
-            <span>QUESTION {question.id} OF 54</span>
-            <span className="hidden sm:flex items-center gap-1 text-[#5A6E68]">
-              <Command className="w-3.5 h-3.5" /> Keys [1-6] active
-            </span>
-          </div>
-
-          <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#1E3A34] leading-snug">
-            "{question.text}"
-          </h2>
-        </div>
-
-        {/* 6-Point Likert Scale Options */}
-        <div className="space-y-3 pt-2">
-          {LIKERT_OPTIONS.map((opt) => {
-            const isSelected = selectedValue === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => handleSelectOption(opt.value)}
-                className={`w-full min-h-[52px] p-4 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-[#1E3A34] text-[#F9F8F3] border-[#1E3A34] shadow-md scale-[1.01] font-semibold'
-                    : 'bg-[#F9F8F3] text-[#1E3A34] border-[#E5E2D9] hover:bg-[#F2F0E6] hover:border-[#D2CDBF]'
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  <div className={`w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-mono font-bold ${
-                    isSelected ? 'border-[#C86D51] bg-[#C86D51] text-white' : 'border-[#D5D1C4] bg-white text-[#5A6E68]'
-                  }`}>
-                    {opt.value}
-                  </div>
-                  <span className="text-sm font-medium leading-relaxed">{opt.label}</span>
-                </div>
-
-                {isSelected && (
-                  <CheckCircle2 className="w-5 h-5 text-[#C86D51] shrink-0" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-      </div>
-
-      {/* Bottom Controls */}
-      <div className="flex items-center justify-between pt-2">
-        <button
-          onClick={handlePrevious}
-          disabled={currentIndex === 0}
-          className={`flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] ${
-            currentIndex === 0
-              ? 'opacity-40 cursor-not-allowed text-[#5A6E68]'
-              : 'bg-white border border-[#E5E2D9] text-[#1E3A34] hover:bg-[#F2F0E6] cursor-pointer'
-          }`}
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Previous</span>
-        </button>
-
-        <div className="text-xs text-[#5A6E68] font-mono hidden sm:block">
-          Question {currentIndex + 1} / 54
-        </div>
-
-        <button
-          onClick={handleNext}
-          disabled={!selectedValue}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all min-h-[48px] cursor-pointer ${
-            !selectedValue
-              ? 'opacity-50 cursor-not-allowed bg-[#E5E2D9] text-[#5A6E68]'
-              : currentIndex === FIRO_B_QUESTIONS.length - 1
-              ? 'btn-terracotta'
-              : 'btn-forest'
-          }`}
-        >
-          <span>{currentIndex === FIRO_B_QUESTIONS.length - 1 ? 'Finish FIRO-B' : 'Next Question'}</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-      
-      {/* Next Test Sequential Prompt Modal */}
-      {showNextTestPrompt && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-8 sm:p-10 max-w-lg w-full border border-[#E5E2D9] shadow-2xl text-center space-y-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#EBF2F0] text-[#1E3A34] flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-9 h-9 text-emerald-600" />
+              <div className="min-w-0">
+                <p className="font-editorial font-bold text-[#1E3A34] text-base leading-tight">
+                  FIRO-B Assessment
+                </p>
+                <p className="text-[10px] text-[#6B7974] mt-0.5">
+                  Interpersonal preferences & interaction style
+                </p>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <span className="badge-terracotta px-3 py-1 rounded-full text-xs font-bold uppercase">
-                Part 1 of 2 Complete
-              </span>
-              <h3 className="font-editorial text-2xl sm:text-3xl font-bold text-[#1E3A34]">
-                FIRO-B Assessment Completed!
-              </h3>
-              <p className="text-sm text-[#5A6E68] leading-relaxed">
-                Great job! Now take the <strong>Aptitude & Scenarios Test</strong> to synthesize your complete career profile and unlock your customized roadmap.
+            <span className="badge-forest px-2.5 py-1.5 rounded-full text-[10px] font-semibold whitespace-nowrap">
+              {question.categoryLabel}
+            </span>
+          </div>
+
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-[0.1em] font-bold text-[#C86D51]">
+                Question {currentIndex + 1} of {totalQuestions}
+              </p>
+              <p className="text-[10px] text-[#7A817C] mt-0.5">
+                {Math.round(progress)}% complete
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <button
-                onClick={() => navigate('/assessment/custom')}
-                className="btn-terracotta w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer"
-              >
-                <span>Start Part 2: Aptitude Test →</span>
-              </button>
-
-              <button
-                onClick={() => navigate('/assessment')}
-                className="w-full py-3 rounded-xl border border-[#E5E2D9] bg-[#F9F8F3] hover:bg-[#F2F0E6] text-xs font-semibold text-[#5A6E68] cursor-pointer"
-              >
-                Return to Assessment Hub
-              </button>
+            <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[#6B7974]">
+              <Keyboard className="w-3.5 h-3.5" />
+              <span>Press 1–6 to answer</span>
             </div>
           </div>
-        </div>
-      )}
 
+          <ProgressBar
+            current={currentIndex + 1}
+            total={totalQuestions}
+            label="Assessment progress"
+          />
+        </header>
+
+        {/* Compact question + 2×3 response grid */}
+        <main className="editorial-card bg-white border border-[#E5E2D9] shadow-sm overflow-hidden">
+          <div className="px-5 py-6 sm:px-9 sm:py-7">
+            <div className="max-w-3xl mx-auto">
+
+              <div className="mb-5 sm:mb-6">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#FCEFEA] border border-[#E9C9BC] text-[9px] font-mono font-bold uppercase tracking-[0.1em] text-[#C86D51]">
+                  {question.categoryLabel}
+                </span>
+
+                <h1 className="font-editorial text-[1.45rem] sm:text-[1.9rem] font-bold text-[#1E3A34] leading-[1.2] mt-3">
+                  {question.text}
+                </h1>
+
+                <p className="text-[10px] text-[#7A817C] mt-2">
+                  Choose the response that best describes you.
+                </p>
+              </div>
+
+              {/* 2 × 3 Likert grid */}
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+                role="radiogroup"
+                aria-label="Response options"
+              >
+                {LIKERT_OPTIONS.map((opt) => {
+                  const isSelected = selectedValue === opt.value;
+
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      onClick={() => handleSelectOption(opt.value)}
+                      className={`group min-h-[58px] sm:min-h-[64px] px-3.5 py-2.5 rounded-xl border text-left flex items-center justify-between gap-3 transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C86D51] focus-visible:ring-offset-2 ${
+                        isSelected
+                          ? 'bg-[#1E3A34] text-[#F9F8F3] border-[#1E3A34] shadow-md'
+                          : 'bg-[#FAF9F5] text-[#1E3A34] border-[#E5E2D9] hover:bg-[#F2F0E6] hover:border-[#CFCABD] hover:-translate-y-[1px]'
+                      }`}
+                    >
+                      <span className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`w-8 h-8 rounded-lg border flex items-center justify-center text-[11px] font-mono font-bold shrink-0 ${
+                            isSelected
+                              ? 'border-[#C86D51] bg-[#C86D51] text-white'
+                              : 'border-[#D5D1C4] bg-white text-[#5A6E68] group-hover:border-[#C86D51]/50'
+                          }`}
+                        >
+                          {opt.value}
+                        </span>
+
+                        <span className="text-[12px] sm:text-[13px] font-medium leading-tight">
+                          {opt.label}
+                        </span>
+                      </span>
+
+                      <span
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? 'border-[#C86D51] text-[#C86D51]'
+                            : 'border-[#D5D1C4] text-transparent'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {isSelected && <CheckCircle2 className="w-4 h-4" />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between mt-4 px-1">
+                <span className="text-[10px] text-[#7A817C]">
+                  Selecting an answer moves you forward
+                </span>
+                <span className="hidden sm:inline text-[10px] font-mono text-[#7A817C]">
+                  1 = Strongly Disagree · 6 = Strongly Agree
+                </span>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Navigation */}
+        <footer className="flex items-center justify-between gap-4 mt-4">
+          <button
+            type="button"
+            onClick={handlePrevious}
+            disabled={currentIndex === 0}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-[11px] font-semibold transition-all ${
+              currentIndex === 0
+                ? 'text-[#A9B0AC] cursor-not-allowed'
+                : 'bg-white border border-[#E5E2D9] text-[#1E3A34] hover:bg-[#F2F0E6]'
+            }`}
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Previous
+          </button>
+
+          <div className="text-[10px] font-mono text-[#7A817C]">
+            {currentIndex + 1} / {totalQuestions}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!selectedValue}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[11px] font-semibold transition-all ${
+              !selectedValue
+                ? 'bg-[#E5E2D9] text-[#8A908C] cursor-not-allowed'
+                : currentIndex === totalQuestions - 1
+                  ? 'btn-terracotta shadow-sm'
+                  : 'btn-forest shadow-sm'
+            }`}
+          >
+            <span>{currentIndex === totalQuestions - 1 ? 'Finish FIRO-B' : 'Next'}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </footer>
+
+      </div>
     </div>
   );
 };

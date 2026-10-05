@@ -5,16 +5,11 @@ import { useAssessment } from '../context/AssessmentContext';
 
 export const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { personalDetails, isAssessmentComplete, resetAssessment, loadDemoUser } = useAssessment();
+  const { personalDetails, isFiroBComplete, logout } = useAssessment();
 
   const handleLogout = () => {
-    resetAssessment();
+    logout();
     navigate('/');
-  };
-
-  const handleLoadDemo = () => {
-    loadDemoUser();
-    navigate('/dashboard');
   };
 
   return (
@@ -31,23 +26,14 @@ export const Navbar: React.FC = () => {
               Career<span className="text-[#C86D51]">Compass</span>
             </span>
             <span className="text-[10px] tracking-widest uppercase font-medium text-[#5A6E68] block mt-0.5">
-              AI Career Fit Engine
+              A Career Fit Engine
             </span>
           </div>
         </Link>
 
         {/* Primary Action & Logout */}
         <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleLoadDemo}
-            title="Load instant pre-filled assessment responses & full dashboard"
-            className="px-3.5 py-2 rounded-xl bg-white border border-[#E5E2D9] text-[#1E3A34] hover:bg-[#F2F0E6] text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <span className="text-[#C86D51]">⚡</span>
-            <span>Demo User</span>
-          </button>
-
-          {isAssessmentComplete ? (
+          {isFiroBComplete ? (
             <div className="flex items-center gap-2">
               <Link
                 to="/dashboard"
@@ -58,16 +44,17 @@ export const Navbar: React.FC = () => {
               </Link>
 
               <button
-                onClick={handleLogout}
-                title="Log out & reset session as new user"
-                className="p-2.5 rounded-xl border border-[#E5E2D9] text-[#5A6E68] hover:text-red-500 hover:bg-white hover:border-red-200 transition-all cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
+  onClick={handleLogout}
+  title="Log out & reset session as new user"
+  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-[#E5E2D9] bg-white text-[#5A6E68] hover:text-[#C86D51] hover:bg-[#FBECE7] hover:border-[#EBC8BC] text-xs sm:text-sm font-semibold transition-all cursor-pointer"
+>
+  <LogOut className="w-4 h-4" />
+  <span>Log out</span>
+</button>
             </div>
           ) : (
             <Link
-              to="/assessment"
+              to="/login"
               className="btn-terracotta flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm"
             >
               <span>Take Assessment</span>

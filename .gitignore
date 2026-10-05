@@ -4,3 +4,7 @@ node_modules
 dist
 .env
 .env.local
+
+# Assessment response exports (contain personal data)
+*.xlsx
+~$*.xlsx

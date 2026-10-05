@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, User, GraduationCap, Plus, X, ArrowRight, Lock, CheckCircle2, ShieldCheck, Phone, BookOpen, Percent, Tag } from 'lucide-react';
+import { Sparkles, User, GraduationCap, Plus, X, ArrowRight, Lock, CheckCircle2, ShieldCheck, Phone, BookOpen, Percent } from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
 import { calculateArchetype } from '../data/archetypes';
 import { ArchetypeCard } from '../components/ArchetypeCard';

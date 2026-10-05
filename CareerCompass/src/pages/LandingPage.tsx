@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Users, Brain, Target, Briefcase, GraduationCap, Award, Sparkles, ChevronRight, Compass, ShieldCheck, Zap, Layers, Flame, TrendingUp } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Users, Brain, Target, Briefcase, GraduationCap, Award, Sparkles, Compass } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -16,59 +16,6 @@ export const LandingPage: React.FC = () => {
   const { isAssessmentComplete } = useAssessment();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Interactive Live Persona Simulator State
-  const [selectedTrait, setSelectedTrait] = useState<'analytical' | 'creative' | 'leadership'>('analytical');
-
-  const traitConfigs = {
-    analytical: {
-      title: 'The Strategic Systems Architect',
-      fit: '96% Fit',
-      salary: '₹18.5L - ₹32L / yr',
-      vibe: 'High Autonomy • Deep Research Labs',
-      roles: ['AI/ML Systems Architect', 'Quantitative Data Strategist'],
-      vectors: [
-        { label: 'Analytical Logic', score: 96 },
-        { label: 'Technical Mindset', score: 92 },
-        { label: 'Strategic Planning', score: 85 },
-        { label: 'FIRO-B Dynamic', score: 76 },
-        { label: 'Creative Problem Solving', score: 70 },
-      ],
-      accent: '#C86D51',
-      desc: 'Excels at decomposing multi-layered logic, data architecture, and abstract problem spaces.',
-    },
-    creative: {
-      title: 'The Creative Experience Technologist',
-      fit: '94% Fit',
-      salary: '₹15L - ₹28L / yr',
-      vibe: 'Visual Craft • Design Systems',
-      roles: ['Design Systems Engineer', 'Interactive Frontend Lead'],
-      vectors: [
-        { label: 'Creative Problem Solving', score: 95 },
-        { label: 'Technical Mindset', score: 88 },
-        { label: 'FIRO-B Dynamic', score: 84 },
-        { label: 'Analytical Logic', score: 78 },
-        { label: 'Strategic Planning', score: 72 },
-      ],
-      accent: '#D4A373',
-      desc: 'Bridges aesthetic intuition, empathetic human-computer interaction, and frontend craftsmanship.',
-    },
-    leadership: {
-      title: 'The Collaborative Innovation Catalyst',
-      fit: '93% Fit',
-      salary: '₹20L - ₹36L / yr',
-      vibe: 'Empathetic Direction • Agile Growth',
-      roles: ['Technical Product Lead', 'Engineering Manager'],
-      vectors: [
-        { label: 'Strategic Planning', score: 94 },
-        { label: 'FIRO-B Dynamic', score: 92 },
-        { label: 'Analytical Logic', score: 86 },
-        { label: 'Creative Problem Solving', score: 80 },
-        { label: 'Technical Mindset', score: 75 },
-      ],
-      accent: '#E07A5F',
-      desc: 'Multiplier of team velocity, cross-functional alignment, and ambitious product vision.',
-    },
-  };
 
   const pillars = [
     {
@@ -120,7 +67,7 @@ export const LandingPage: React.FC = () => {
     { number: '02', title: 'AI Neural Synthesis', desc: 'Our engine processes 84 multi-vector data points to compute your archetype.' },
     { number: '03', title: 'Unlock Persona Profile', desc: 'Add your academic stream & skills to generate your customized roadmap.' },
     { number: '04', title: 'Ranked Career Matches', desc: 'Receive ranked career clusters with transparent AI explainability metrics.' },
-    { number: '05', title: '5-Year Learning Blueprint', desc: 'Bridge skill gaps with step-by-step milestone checklists & salary projections.' },
+    { number: '05', title: 'Personalized Career Roadmap', desc: 'Bridge skill gaps with step-by-step milestone checklists & salary projections.' },
   ];
 
   // GSAP Animations
@@ -148,10 +95,9 @@ export const LandingPage: React.FC = () => {
     });
   }, { scope: containerRef });
 
-  const activeConf = traitConfigs[selectedTrait];
 
   return (
-    <div ref={containerRef} className="space-y-28 pb-24 overflow-hidden bg-grid-pattern">
+    <div ref={containerRef} className="space-y-28 pb-24 overflow-hidden bg-grid-pattern" style={{ zoom: 0.9 }}>
       
       {/* ================= HERO SECTION ================= */}
       <section className="relative pt-12 pb-16 overflow-hidden">
@@ -167,7 +113,7 @@ export const LandingPage: React.FC = () => {
           <div className="hero-badge-pill inline-flex items-center gap-2 px-4 py-2 rounded-full badge-terracotta text-xs font-bold uppercase tracking-wider shadow-sm backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-[#C86D51] animate-ping" />
             <Sparkles className="w-3.5 h-3.5 text-[#C86D51]" />
-            <span>AI-Driven Multi-Vector Psychometrics</span>
+            <span>Multi-Vector Psychometrics</span>
           </div>
 
           {/* Epic Main Headline with Shimmer */}
@@ -196,7 +142,7 @@ export const LandingPage: React.FC = () => {
                 </MagneticButton>
               </Link>
             ) : (
-              <Link to="/assessment">
+              <Link to="/login">
                 <MagneticButton className="btn-terracotta px-9 py-4 rounded-xl text-base font-bold shadow-xl flex items-center gap-3 group">
                   <span>Start Free Career Assessment</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
@@ -205,34 +151,9 @@ export const LandingPage: React.FC = () => {
             )}
           </div>
 
-          {/* ================= INTERACTIVE LIVE NEURAL SIMULATOR ================= */}
+          {/* ================= CAREER PROFILE PREVIEW ================= */}
           <div className="hero-interactive-dashboard max-w-4xl mx-auto pt-8 relative">
-            
-            {/* Floating Orbiting Badges */}
-            <div className="hero-floating-node hidden lg:flex absolute -top-4 -left-12 p-3.5 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E5E2D9] shadow-xl items-center gap-3 animate-float z-20">
-              <div className="w-9 h-9 rounded-xl bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center">
-                <Flame className="w-5 h-5 text-[#C86D51]" />
-              </div>
-              <div className="text-left text-xs">
-                <p className="font-bold text-[#1E3A34]">98.4% Accuracy</p>
-                <p className="text-[#5A6E68]">FIRO-B Interpersonal Matrix</p>
-              </div>
-            </div>
-
-            <div className="hero-floating-node hidden lg:flex absolute top-1/2 -right-14 p-3.5 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E5E2D9] shadow-xl items-center gap-3 animate-float-reverse z-20">
-              <div className="w-9 h-9 rounded-xl bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-emerald-400" />
-              </div>
-              <div className="text-left text-xs">
-                <p className="font-bold text-[#1E3A34]">₹18.5L Avg Target</p>
-                <p className="text-emerald-700 font-semibold">+34% Market Demand</p>
-              </div>
-            </div>
-
-            {/* The Main Simulator Card */}
             <div className="rounded-3xl border border-[#E5E2D9] bg-white/95 backdrop-blur-xl p-6 sm:p-9 shadow-2xl space-y-7 relative overflow-hidden text-left">
-              
-              {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E2D9] pb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-[#1E3A34] text-[#F9F8F3] flex items-center justify-center shadow-xs">
@@ -240,127 +161,85 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C86D51]">
-                      Real-Time Neural Simulator
+                      Career Profile Preview
                     </span>
                     <h3 className="font-editorial text-xl font-bold text-[#1E3A34]">
-                      Instant Archetype Vector Matrix
+                      Your Interpersonal & Career Insights
                     </h3>
                   </div>
                 </div>
-
-                {/* Trait Tabs */}
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTrait('analytical')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      selectedTrait === 'analytical'
-                        ? 'bg-[#1E3A34] text-white shadow-sm'
-                        : 'bg-[#F9F8F3] text-[#5A6E68] border border-[#E5E2D9] hover:bg-[#F2F0E6]'
-                    }`}
-                  >
-                    ⚡ Systems & Logic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTrait('creative')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      selectedTrait === 'creative'
-                        ? 'bg-[#1E3A34] text-white shadow-sm'
-                        : 'bg-[#F9F8F3] text-[#5A6E68] border border-[#E5E2D9] hover:bg-[#F2F0E6]'
-                    }`}
-                  >
-                    🎨 Interface Craft
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTrait('leadership')}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      selectedTrait === 'leadership'
-                        ? 'bg-[#1E3A34] text-white shadow-sm'
-                        : 'bg-[#F9F8F3] text-[#5A6E68] border border-[#E5E2D9] hover:bg-[#F2F0E6]'
-                    }`}
-                  >
-                    🚀 Product Leadership
-                  </button>
-                </div>
+                <span className="badge-terracotta px-3 py-1 rounded-full text-xs font-bold">
+                  FIRO-B Assessment
+                </span>
               </div>
 
-              {/* Body: Live Radar SVG & Archetype Details */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                
-                {/* Modern Multi-Dimension Trait Progress Matrix */}
-                <div className="md:col-span-5 bg-[#F9F8F3] rounded-2xl p-5 border border-[#E5E2D9] space-y-3.5">
+                <div className="md:col-span-5 bg-[#F9F8F3] rounded-2xl p-5 border border-[#E5E2D9] space-y-4">
                   <div className="flex items-center justify-between border-b border-[#E5E2D9] pb-2">
-                    <span className="text-xs font-mono font-bold uppercase text-[#1E3A34]">Trait Vector Matrix</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#E5E2D9] text-[#C86D51] font-bold">5 DIMENSIONS</span>
+                    <span className="text-xs font-mono font-bold uppercase text-[#1E3A34]">Interpersonal Dimensions</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#E5E2D9] text-[#C86D51] font-bold">3 AREAS</span>
                   </div>
 
-                  <div className="space-y-2.5">
-                    {activeConf.vectors.map((vec, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="flex justify-between text-xs font-medium">
-                          <span className="text-[#1E3A34] text-[11px] truncate max-w-[150px]">{vec.label}</span>
-                          <span className="font-mono font-bold text-[#C86D51] text-[11px]">{vec.score}%</span>
+                  {[
+                    { label: 'Inclusion', expressed: 'Expressed', wanted: 'Wanted', e: 76, w: 64 },
+                    { label: 'Control', expressed: 'Expressed', wanted: 'Wanted', e: 68, w: 72 },
+                    { label: 'Affection', expressed: 'Expressed', wanted: 'Wanted', e: 58, w: 70 },
+                  ].map((dimension) => (
+                    <div key={dimension.label} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-[#1E3A34]">{dimension.label}</span>
+                        <span className="text-[10px] font-mono text-[#5A6E68]">{dimension.expressed} / {dimension.wanted}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="w-full h-1.5 bg-[#E5E2D9] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-[#C86D51]" style={{ width: `${dimension.e}%` }} />
                         </div>
-                        <div className="w-full h-2 bg-[#E5E2D9] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-700 ease-out"
-                            style={{
-                              width: `${vec.score}%`,
-                              backgroundColor: activeConf.accent,
-                            }}
-                          />
+                        <div className="w-full h-1.5 bg-[#E5E2D9] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-[#1E3A34]" style={{ width: `${dimension.w}%` }} />
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
 
-                  <div className="pt-1 text-center">
-                    <span className="text-[10px] font-mono text-[#5A6E68]">✦ Dynamic Multidimensional Scoring</span>
+                  <div className="pt-1 flex items-center justify-center gap-3 text-[10px] font-mono text-[#5A6E68]">
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#C86D51]" />Expressed</span>
+                    <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#1E3A34]" />Wanted</span>
                   </div>
                 </div>
 
-                {/* Right Details Block */}
                 <div className="md:col-span-7 space-y-4">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold uppercase text-[#C86D51]">Calculated Archetype</span>
-                      <span className="badge-terracotta px-2.5 py-0.5 rounded-full text-xs font-bold">
-                        {activeConf.fit}
-                      </span>
-                    </div>
+                    <span className="text-xs font-mono font-bold uppercase text-[#C86D51]">What your results can reveal</span>
                     <h4 className="font-editorial text-2xl font-bold text-[#1E3A34] mt-1">
-                      {activeConf.title}
+                      A clearer picture of how you relate to others
                     </h4>
-                    <p className="text-sm text-[#5A6E68] leading-relaxed mt-1">
-                      {activeConf.desc}
+                    <p className="text-sm text-[#5A6E68] leading-relaxed mt-2">
+                      FIRO-B helps identify your interpersonal needs around inclusion, control, and affection — giving you useful context for communication, teamwork, and workplace relationships.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="p-3 bg-[#F9F8F3] rounded-xl border border-[#E5E2D9]">
-                      <span className="text-[10px] uppercase font-bold text-[#5A6E68] block">Workplace Dynamic</span>
-                      <span className="text-xs font-bold text-[#1E3A34] mt-0.5 block">{activeConf.vibe}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div className="p-4 bg-[#F9F8F3] rounded-xl border border-[#E5E2D9]">
+                      <span className="text-[10px] uppercase font-bold text-[#5A6E68] block">Profile Insight</span>
+                      <span className="text-sm font-bold text-[#1E3A34] mt-1 block">Interpersonal preferences</span>
                     </div>
-                    <div className="p-3 bg-[#F9F8F3] rounded-xl border border-[#E5E2D9]">
-                      <span className="text-[10px] uppercase font-bold text-[#5A6E68] block">Est. Market Salary</span>
-                      <span className="text-xs font-bold text-[#C86D51] mt-0.5 block">{activeConf.salary}</span>
+                    <div className="p-4 bg-[#F9F8F3] rounded-xl border border-[#E5E2D9]">
+                      <span className="text-[10px] uppercase font-bold text-[#5A6E68] block">Assessment Output</span>
+                      <span className="text-sm font-bold text-[#1E3A34] mt-1 block">Expressed & wanted needs</span>
                     </div>
                   </div>
 
                   <div className="pt-1">
-                    <span className="text-[11px] font-bold uppercase text-[#1E3A34] block mb-1.5">Top Target Roles:</span>
+                    <span className="text-[11px] font-bold uppercase text-[#1E3A34] block mb-2">CareerCompass uses this to help you understand:</span>
                     <div className="flex flex-wrap gap-2">
-                      {activeConf.roles.map((r, i) => (
-                        <span key={i} className="px-3 py-1 rounded-lg bg-white border border-[#E5E2D9] text-xs font-semibold text-[#1E3A34] shadow-2xs">
-                          ✦ {r}
+                      {['Team dynamics', 'Communication style', 'Workplace preferences'].map((item) => (
+                        <span key={item} className="px-3 py-1 rounded-lg bg-white border border-[#E5E2D9] text-xs font-semibold text-[#1E3A34] shadow-2xs">
+                          ✦ {item}
                         </span>
                       ))}
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -381,9 +260,11 @@ export const LandingPage: React.FC = () => {
             </div>
             <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-[#E5E2D9]/70 shadow-2xs">
               <p className="font-editorial text-3xl sm:text-4xl font-bold text-[#1E3A34]">
-                <MetricCounter end={94.2} decimals={1} suffix="%" duration={1.8} />
-              </p>
-              <p className="text-xs text-[#5A6E68] font-medium mt-1">Predictive Fit Accuracy</p>
+  <MetricCounter end={3} suffix=" Stages" duration={1.8} />
+</p>
+              <p className="text-sm sm:text-base text-[#5F746E]">
+  Personalized Career Analysis
+</p>
             </div>
             <div className="p-4 rounded-2xl bg-white/60 backdrop-blur-sm border border-[#E5E2D9]/70 shadow-2xs">
               <p className="font-editorial text-3xl sm:text-4xl font-bold text-[#C86D51]">
@@ -492,35 +373,6 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ================= FINAL HIGH-IMPACT CTA ================= */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-br from-[#1E3A34] to-[#142824] text-[#F9F8F3] rounded-3xl p-10 sm:p-20 text-center space-y-8 shadow-2xl relative overflow-hidden border border-[#2C524A]">
-          <div className="absolute -bottom-12 -right-12 w-80 h-80 bg-[#C86D51]/25 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -top-12 -left-12 w-80 h-80 bg-[#1E3A34]/50 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="space-y-4 relative z-10 max-w-3xl mx-auto">
-            <span className="badge-terracotta px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-2">
-              <Zap className="w-3.5 h-3.5 text-[#C86D51]" />
-              <span>100% Free Assessment • 15 Minutes</span>
-            </span>
-            <h2 className="font-editorial text-3xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-              Ready to Discover Your True Career Fit?
-            </h2>
-            <p className="text-[#A2B5AF] text-base sm:text-lg leading-relaxed max-w-xl mx-auto">
-              Synthesize your interpersonal, cognitive, and passion vectors today. Unlock ranked career clusters and tailored 5-year learning roadmaps.
-            </p>
-          </div>
-
-          <div className="pt-4 relative z-10">
-            <Link to="/assessment">
-              <MagneticButton className="btn-terracotta inline-flex items-center gap-3 px-10 py-5 rounded-2xl text-base font-bold shadow-2xl group cursor-pointer">
-                <span>Start Free Assessment Now</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
-              </MagneticButton>
-            </Link>
-          </div>
-        </div>
-      </section>
 
     </div>
   );

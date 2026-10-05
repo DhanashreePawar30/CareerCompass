@@ -18,6 +18,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { RecommendationsPage } from './pages/RecommendationsPage';
 import { CareerDetailsPage } from './pages/CareerDetailsPage';
 import { UnlockProfilePage } from './pages/UnlockProfilePage';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 // Scroll to top on navigation helper
 const ScrollToTop: React.FC = () => {
@@ -41,6 +43,8 @@ export function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/assessment" element={<AssessmentHubPage />} />
                 <Route path="/assessment/firo-b" element={<FiroBQuestionPage />} />

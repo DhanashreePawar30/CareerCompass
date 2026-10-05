@@ -1,8 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { FIRO_B_QUESTIONS } from '../data/firoBQuestions';
 import { CUSTOM_QUESTIONS } from '../data/customQuestions';
 import { CAREER_DATABASE, CAREER_CLUSTERS } from '../data/careerDatabase';
 import type { CareerProfile, CareerCluster } from '../data/careerDatabase';
+import { calculateArchetype } from '../data/archetypes';
+import { fetchFiroBSynthesis } from '../services/aiService';
+import type { FiroBSynthesisResult } from '../services/aiService';
+import { fetchProgress, saveProgress } from '../services/progressService';
+import type { ProgressSnapshot } from '../services/progressService';
+
 
 export interface PersonalDetails {
   name: string;
@@ -53,6 +59,10 @@ interface AssessmentContextType {
   rankedCareers: CareerProfile[];
   rankedClusters: (CareerCluster & { matchPercentage: number })[];
 
+  // FIRO-B AI Insights
+  firoBAiInsight: FiroBSynthesisResult | null;
+  isLoadingAi: boolean;
+
   // Actions
   updatePersonalDetails: (details: Partial<PersonalDetails>) => void;
   updateAcademicDetails: (details: Partial<AcademicDetails>) => void;
@@ -62,9 +72,14 @@ interface AssessmentContextType {
   setCustomAnswer: (questionId: number, optionId: string) => void;
   completeFiroB: () => void;
   completeCustom: () => void;
+  /** Clears answers for a retake; keeps the signed-in user's profile. */
   resetAssessment: () => void;
-  loadDemoUser: () => void;
+  /** Switches to the given account, restoring its saved progress from MongoDB (or starting fresh). */
+  signIn: (email: string, profile?: { personal?: Partial<PersonalDetails>; academic?: Partial<AcademicDetails> }) => Promise<void>;
+  /** Signs out; the account's progress stays saved and is restored on the next sign-in. */
+  logout: () => void;
   getCareerById: (id: string) => CareerProfile | undefined;
+  generateFiroBAiInsight: () => Promise<void>;
 }
 
 const emptyPersonal: PersonalDetails = {
@@ -83,38 +98,42 @@ const emptyAcademic: AcademicDetails = {
   skillTags: []
 };
 
-const demoPersonal: PersonalDetails = {
-  name: 'Aarav Sharma',
-  age: '21',
-  gender: 'Male',
-  email: 'aarav.sharma@example.edu',
-  phone: '+91 98765 43210'
+/**
+ * Everything saved per account. MongoDB (user_progress) is the source of truth;
+ * localStorage cc_accounts[email] is an offline backup used when the server is unreachable.
+ */
+type AccountSnapshot = ProgressSnapshot;
+
+const emptySnapshot: AccountSnapshot = {
+  personal: emptyPersonal,
+  academic: emptyAcademic,
+  firoBAnswers: {},
+  customAnswers: {},
+  isFiroBComplete: false,
+  isCustomComplete: false,
+  firoBAiInsight: null
 };
 
-const demoAcademic: AcademicDetails = {
-  educationLevel: 'Undergraduate (3rd-4th Year)',
-  courseStream: 'Computer Science & Engineering',
-  keySubjects: 'Data Structures, Machine Learning, Cloud Systems, Distributed Architecture',
-  gradePercentage: '8.8 CGPA (85%)',
-  skillTags: ['Python', 'TypeScript', 'React', 'Machine Learning', 'Data Structures', 'System Design', 'SQL']
-};
+const SAVE_DEBOUNCE_MS = 600;
 
-const generateDemoFiroBAnswers = (): Record<number, number> => {
-  const ans: Record<number, number> = {};
-  for (let i = 1; i <= 54; i++) {
-    ans[i] = ((i * 7) % 4) + 3; // generates realistic distribution 3, 4, 5, 6
+const ACCOUNTS_KEY = 'cc_accounts';
+
+const readAccounts = (): Record<string, AccountSnapshot> => {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}');
+  } catch {
+    return {};
   }
-  return ans;
 };
 
-const generateDemoCustomAnswers = (): Record<number, string> => {
-  const ans: Record<number, string> = {};
-  const options = ['a', 'b', 'c', 'd'];
-  for (let i = 1; i <= 30; i++) {
-    ans[i] = options[(i * 3) % 4];
-  }
-  return ans;
-};
+/** "tanishka.pawar@x.com" -> "Tanishka Pawar" (used only when no registered name is known) */
+const nameFromEmail = (email: string) =>
+  email
+    .split('@')[0]
+    .split(/[._\-+\d]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 
 const emptyFiroBScores: FiroBScores = { EI: 0, WI: 0, EC: 0, WC: 0, EA: 0, WA: 0 };
 const emptyTraitScores: CustomTraitScores = { Analytical: 0, Creative: 0, Leadership: 0, Technical: 0, People: 0 };
@@ -124,7 +143,22 @@ const AssessmentContext = createContext<AssessmentContextType | undefined>(undef
 export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>(() => {
     const saved = localStorage.getItem('cc_personal');
-    return saved ? JSON.parse(saved) : emptyPersonal;
+    const parsed: PersonalDetails = saved ? JSON.parse(saved) : emptyPersonal;
+    // Migrate users who registered before the register page wrote to cc_personal
+    if (!parsed.name) {
+      const legacyName = localStorage.getItem('cc_user_name');
+      const legacyEmail = localStorage.getItem('cc_user_email');
+      const legacyProfile = JSON.parse(localStorage.getItem('cc_user_profile') || '{}');
+      return {
+        ...parsed,
+        name: legacyName || parsed.name,
+        email: parsed.email || legacyEmail || '',
+        phone: parsed.phone || legacyProfile.phone || '',
+        age: parsed.age || legacyProfile.age || '',
+        gender: parsed.gender || legacyProfile.gender || ''
+      };
+    }
+    return parsed;
   });
 
   const [academicDetails, setAcademicDetails] = useState<AcademicDetails>(() => {
@@ -149,6 +183,23 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [isCustomComplete, setIsCustomComplete] = useState<boolean>(() => {
     return localStorage.getItem('cc_custom_complete') === 'true';
   });
+
+  const [firoBAiInsight, setFiroBAiInsight] = useState<FiroBSynthesisResult | null>(() => {
+    const saved = localStorage.getItem('cc_firob_ai_insight');
+    const parsed: FiroBSynthesisResult | null = saved ? JSON.parse(saved) : null;
+    // Only real AI output is cached; drop stale fallbacks so the AI is retried
+    return parsed?.source === 'openai' ? parsed : null;
+  });
+
+  const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (firoBAiInsight?.source === 'openai') {
+      localStorage.setItem('cc_firob_ai_insight', JSON.stringify(firoBAiInsight));
+    } else {
+      localStorage.removeItem('cc_firob_ai_insight');
+    }
+  }, [firoBAiInsight]);
 
   useEffect(() => {
     localStorage.setItem('cc_personal', JSON.stringify(personalDetails));
@@ -244,6 +295,74 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return { ...cluster, matchPercentage: avgScore };
   }).sort((a, b) => b.matchPercentage - a.matchPercentage);
 
+  // ── MongoDB sync ──────────────────────────────────────────
+  // Saving waits until the initial server pull finishes, so a stale local copy never overwrites newer server data
+  const [isSyncReady, setIsSyncReady] = useState(false);
+  const pendingSave = useRef<{ email: string; snapshot: AccountSnapshot } | null>(null);
+  const saveTimer = useRef<number | undefined>(undefined);
+
+  const flushPendingSave = () => {
+    window.clearTimeout(saveTimer.current);
+    const pending = pendingSave.current;
+    pendingSave.current = null;
+    if (pending) {
+      saveProgress(pending.email, pending.snapshot, true).catch(err =>
+        console.warn('[Progress] Save to server failed; kept local copy.', err)
+      );
+    }
+  };
+
+  // On first load, pull the signed-in account from MongoDB if the server copy is newer
+  useEffect(() => {
+    const email = personalDetails.email.trim();
+    if (!email) {
+      setIsSyncReady(true);
+      return;
+    }
+    const localSavedAt = Number(localStorage.getItem('cc_saved_at') || 0);
+    fetchProgress(email)
+      .then(remote => {
+        if (remote && (remote.clientSavedAt ?? 0) > localSavedAt) loadSnapshot(remote);
+      })
+      .catch(err => console.warn('[Progress] Could not reach server; using local copy.', err))
+      .finally(() => setIsSyncReady(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save every change: immediately to the local backup, debounced to MongoDB
+  useEffect(() => {
+    const email = personalDetails.email.trim();
+    if (!isSyncReady || !email) return;
+
+    const snapshot: AccountSnapshot = {
+      personal: personalDetails,
+      academic: academicDetails,
+      firoBAnswers,
+      customAnswers,
+      firoBScores: Object.keys(firoBAnswers).length > 0 ? firoBScores : null,
+      isFiroBComplete,
+      isCustomComplete,
+      firoBAiInsight: firoBAiInsight?.source === 'openai' ? firoBAiInsight : null,
+      clientSavedAt: Date.now()
+    };
+
+    localStorage.setItem('cc_saved_at', String(snapshot.clientSavedAt));
+    const accounts = readAccounts();
+    accounts[email.toLowerCase()] = snapshot;
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+
+    pendingSave.current = { email, snapshot };
+    window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(flushPendingSave, SAVE_DEBOUNCE_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSyncReady, personalDetails, academicDetails, firoBAnswers, customAnswers, isFiroBComplete, isCustomComplete, firoBAiInsight]);
+
+  // Don't lose the last few answers if the tab is closed mid-debounce
+  useEffect(() => {
+    window.addEventListener('pagehide', flushPendingSave);
+    return () => window.removeEventListener('pagehide', flushPendingSave);
+  }, []);
+
   const updatePersonalDetails = (details: Partial<PersonalDetails>) => {
     setPersonalDetails(prev => ({ ...prev, ...details }));
   };
@@ -285,38 +404,97 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setIsCustomComplete(true);
   };
 
+  const loadSnapshot = (snapshot: AccountSnapshot) => {
+    setPersonalDetails({ ...emptyPersonal, ...snapshot.personal });
+    setAcademicDetails({ ...emptyAcademic, ...snapshot.academic });
+    setFiroBAnswers(snapshot.firoBAnswers ?? {});
+    setCustomAnswers(snapshot.customAnswers ?? {});
+    setIsFiroBComplete(Boolean(snapshot.isFiroBComplete));
+    setIsCustomComplete(Boolean(snapshot.isCustomComplete));
+    setFiroBAiInsight(snapshot.firoBAiInsight?.source === 'openai' ? snapshot.firoBAiInsight : null);
+  };
+
   const resetAssessment = () => {
     setFiroBAnswers({});
     setCustomAnswers({});
     setIsFiroBComplete(false);
     setIsCustomComplete(false);
-    setPersonalDetails(emptyPersonal);
-    setAcademicDetails(emptyAcademic);
-    localStorage.removeItem('cc_personal');
-    localStorage.removeItem('cc_academic');
-    localStorage.removeItem('cc_firob_answers');
-    localStorage.removeItem('cc_custom_answers');
-    localStorage.removeItem('cc_firob_complete');
-    localStorage.removeItem('cc_custom_complete');
+    setFiroBAiInsight(null);
   };
 
-  const loadDemoUser = () => {
-    const firoB = generateDemoFiroBAnswers();
-    const custom = generateDemoCustomAnswers();
+  const signIn: AssessmentContextType['signIn'] = async (email, profile) => {
+    // Save the previous account's last changes before switching
+    flushPendingSave();
 
-    setPersonalDetails(demoPersonal);
-    setAcademicDetails(demoAcademic);
-    setFiroBAnswers(firoB);
-    setCustomAnswers(custom);
-    setIsFiroBComplete(true);
-    setIsCustomComplete(true);
+    const trimmedEmail = email.trim();
+    const key = trimmedEmail.toLowerCase();
 
-    localStorage.setItem('cc_personal', JSON.stringify(demoPersonal));
-    localStorage.setItem('cc_academic', JSON.stringify(demoAcademic));
-    localStorage.setItem('cc_firob_answers', JSON.stringify(firoB));
-    localStorage.setItem('cc_custom_answers', JSON.stringify(custom));
-    localStorage.setItem('cc_firob_complete', 'true');
-    localStorage.setItem('cc_custom_complete', 'true');
+    let saved: AccountSnapshot | null | undefined;
+    try {
+      // Server first; fall back to a local copy (offline, or progress made before MongoDB sync existed)
+      saved = (await fetchProgress(trimmedEmail)) ?? readAccounts()[key];
+    } catch (err) {
+      console.warn('[Progress] Could not reach server; using local copy.', err);
+      saved = readAccounts()[key];
+    }
+    // Profiles registered before per-account snapshots existed
+    const legacy = JSON.parse(localStorage.getItem('cc_registered_users') || '{}')[key];
+    const base: AccountSnapshot = saved ?? {
+      ...emptySnapshot,
+      personal: { ...emptyPersonal, ...legacy?.personal },
+      academic: { ...emptyAcademic, ...legacy?.academic }
+    };
+
+    const personal = { ...emptyPersonal, ...base.personal, ...profile?.personal, email: trimmedEmail };
+    if (!personal.name) personal.name = nameFromEmail(trimmedEmail);
+
+    loadSnapshot({
+      ...base,
+      personal,
+      academic: { ...emptyAcademic, ...base.academic, ...profile?.academic }
+    });
+    setIsSyncReady(true);
+    localStorage.setItem('cc_signed_in', 'true');
+  };
+
+  const logout = () => {
+    flushPendingSave();
+    loadSnapshot(emptySnapshot);
+    localStorage.removeItem('cc_signed_in');
+    localStorage.removeItem('cc_saved_at');
+  };
+
+  const generateFiroBAiInsight = async () => {
+    if (isLoadingAi) return;
+    setIsLoadingAi(true);
+    try {
+      const archetype = calculateArchetype(firoBScores, customTraitScores);
+      const payload = {
+        firoBScores,
+        profile: {
+          educationLevel: academicDetails.educationLevel,
+          courseStream: academicDetails.courseStream,
+          institution: '',
+          gradePercentage: academicDetails.gradePercentage,
+          skills: academicDetails.skillTags
+        },
+        archetype: {
+          id: archetype.id,
+          title: archetype.title
+        },
+        careerResults: rankedCareers.slice(0, 5).map(c => ({
+          id: c.id,
+          title: c.title,
+          matchScore: c.matchScore
+        }))
+      };
+      const insight = await fetchFiroBSynthesis(payload, personalDetails.email);
+      setFiroBAiInsight(insight);
+    } catch (err) {
+      console.error('Failed to generate FIRO-B AI synthesis:', err);
+    } finally {
+      setIsLoadingAi(false);
+    }
   };
 
   const getCareerById = (id: string) => {
@@ -338,6 +516,8 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isAssessmentComplete,
         rankedCareers,
         rankedClusters,
+        firoBAiInsight,
+        isLoadingAi,
         updatePersonalDetails,
         updateAcademicDetails,
         addSkillTag,
@@ -347,8 +527,10 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         completeFiroB,
         completeCustom,
         resetAssessment,
-        loadDemoUser,
-        getCareerById
+        signIn,
+        logout,
+        getCareerById,
+        generateFiroBAiInsight
       }}
     >
       {children}

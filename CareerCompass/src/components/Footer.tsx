@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, ShieldCheck, Heart, Sparkles, Check, ArrowRight, Zap } from 'lucide-react';
+import { Compass, ShieldCheck, Heart, Sparkles, Check, Zap } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -139,8 +139,7 @@ export const Footer: React.FC = () => {
               <span>Career Trajectory Dispatch</span>
             </h4>
             <p className="text-sm text-[#A2B5AF] leading-relaxed">
-              Get bi-weekly emerging tech career maps, salary updates, and placement interview breakdowns.
-            </p>
+Explore career options, identify essential skills, and build a clearer path toward your goals.            </p>
             
             {subscribed ? (
               <div className="p-3.5 bg-[#1E3A34] rounded-xl border border-[#2C524A] text-xs text-emerald-400 font-semibold flex items-center gap-2">
@@ -173,7 +172,7 @@ export const Footer: React.FC = () => {
         <div className="mt-12 pt-8 border-t border-[#2C524A] flex flex-col sm:flex-row items-center justify-between text-xs text-[#8BA49C] gap-4">
           <p>© {new Date().getFullYear()} CareerCompass Intelligence Engine. All rights reserved.</p>
           <div className="flex items-center gap-1.5">
-            <span>Built with precision for student trajectory</span>
+            <span>Built to guide students toward the right career path</span>
             <Heart className="w-3.5 h-3.5 text-[#C86D51] fill-current inline ml-1" />
           </div>
         </div>
