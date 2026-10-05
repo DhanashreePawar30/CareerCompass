@@ -19,6 +19,7 @@ export interface ProgressSnapshot {
   firoBAnswers: Record<number, number>;
   customAnswers: Record<number, string>;
   firoBScores?: Record<'EI' | 'WI' | 'EC' | 'WC' | 'EA' | 'WA', number> | null;
+  firoBScoreVersion?: 'normalized-v1';
   isFiroBComplete: boolean;
   isCustomComplete: boolean;
   firoBAiInsight: FiroBSynthesisResult | null;

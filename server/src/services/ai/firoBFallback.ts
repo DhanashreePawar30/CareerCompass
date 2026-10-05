@@ -1,174 +1,93 @@
 import { FiroBSynthesisRequest, FiroBSynthesisResult } from './firoBSchema.js';
 
-/**
- * Generates a high-quality deterministic fallback interpretation based on the 6 FIRO-B scores.
- * Used when OpenAI API key is not configured, unreachable, or returns an invalid output.
- */
-export function generateFiroBFallback(input: FiroBSynthesisRequest): FiroBSynthesisResult {
-  const { EI, WI, EC, WC, EA, WA } = input.firoBScores;
+type ScoreBand = 'Lower' | 'Moderate' | 'Higher';
 
-  // Inclusion Pattern Analysis (EI & WI: max 54 each)
-  const isHighEI = EI >= 27;
-  const isHighWI = WI >= 27;
-  let inclusionSummary = '';
-  let inclusionStrength = '';
-  let inclusionDev = '';
+const getScoreBand = (score: number): ScoreBand =>
+  score >= 67 ? 'Higher' : score >= 34 ? 'Moderate' : 'Lower';
 
-  if (isHighEI && isHighWI) {
-    inclusionSummary = 'Your profile indicates a strong desire to both initiate social contact and be included in team activities.';
-    inclusionStrength = 'High social energy, team building, and proactive stakeholder engagement.';
-    inclusionDev = 'Ensure dedicated deep-work periods to avoid over-committing to collaborative meetings.';
-  } else if (isHighEI && !isHighWI) {
-    inclusionSummary = 'You enjoy reaching out to others and driving group engagement on your own terms.';
-    inclusionStrength = 'Proactive networking, initiative in team outreach, and self-directed group alignment.';
-    inclusionDev = 'Be mindful of team members who may prefer quieter, structured communication styles.';
-  } else if (!isHighEI && isHighWI) {
-    inclusionSummary = 'You value being invited and recognized as a core team member while maintaining a selective outreach style.';
-    inclusionStrength = 'Strong loyalty to established teams, thoughtful participation when invited.';
-    inclusionDev = 'Practice taking the initiative in introducing ideas or reaching out to new collaborators.';
-  } else {
-    inclusionSummary = 'Your results suggest a preference for autonomous work environments with focused, low-noise interaction.';
-    inclusionStrength = 'High independent focus, minimal susceptibility to groupthink, self-reliant execution.';
-    inclusionDev = 'Actively communicate progress to keep team leads informed without relying on frequent check-ins.';
-  }
+const describeGap = (gap: number): string => {
+  if (gap > 0) return 'You report expressing this behavior more than you want it from others.';
+  if (gap < 0) return 'You report wanting this behavior from others more than you report expressing it.';
+  return 'Your expressed and wanted scores are equal.';
+};
 
-  // Control Pattern Analysis (EC & WC)
-  const isHighEC = EC >= 27;
-  const isHighWC = WC >= 27;
-  let controlSummary = '';
-  let controlStrength = '';
-  let controlDev = '';
-
-  if (isHighEC && isHighWC) {
-    controlSummary = 'You balance decisive leadership with a strong appreciation for clear organizational guidelines.';
-    controlStrength = 'Adaptable management style, comfortable taking charge while adhering to strategic direction.';
-    controlDev = 'Clarify decision-making boundaries early to avoid role ambiguity with senior mentors.';
-  } else if (isHighEC && !isHighWC) {
-    controlSummary = 'Your profile indicates a clear preference for high autonomy, strategic direction, and decision ownership.';
-    controlStrength = 'Strong executive presence, ownership of outcomes, and natural problem-solving initiative.';
-    controlDev = 'Delegate operational details effectively to avoid micro-managing team workflows.';
-  } else if (!isHighEC && isHighWC) {
-    controlSummary = 'You excel in structured environments with clear procedures, mentorship, and defined boundaries.';
-    controlStrength = 'High operational discipline, thorough compliance with standards, and reliable execution.';
-    controlDev = 'Build confidence in stepping into decision-making roles when unexpected ambiguity arises.';
-  } else {
-    controlSummary = 'Your scores suggest a flexible approach to authority, preferring peer collaboration over strict hierarchy.';
-    controlStrength = 'Egoless collaboration, adaptability to horizontal team structures, low friction with peers.';
-    controlDev = 'Establish personal milestone tracking to maintain velocity without external supervision.';
-  }
-
-  // Affection Pattern Analysis (EA & WA)
-  const isHighEA = EA >= 27;
-  const isHighWA = WA >= 27;
-  let affectionSummary = '';
-  let affectionStrength = '';
-  let affectionDev = '';
-
-  if (isHighEA && isHighWA) {
-    affectionSummary = 'You foster warm, empathetic connections and thrive in high-trust, psychologically safe environments.';
-    affectionStrength = 'Empathetic team leadership, deep relational trust, and positive feedback facilitation.';
-    affectionDev = 'Maintain objective boundaries during tough performance feedback or critical evaluations.';
-  } else if (isHighEA && !isHighWA) {
-    affectionSummary = 'You openly express support and appreciation for teammates while maintaining comfortable personal distance.';
-    affectionStrength = 'Generous praise, uplifting team morale, and supportive mentorship.';
-    affectionDev = 'Ensure your enthusiasm is paired with actionable, constructive analytical feedback.';
-  } else if (!isHighEA && isHighWA) {
-    affectionSummary = 'You appreciate genuine validation and supportive feedback from colleagues and leaders.';
-    affectionStrength = 'Receptive to constructive mentorship, strong appreciation for recognized effort.';
-    affectionDev = 'Practice self-affirmation to stay motivated even in fast-paced or low-feedback environments.';
-  } else {
-    affectionSummary = 'Your profile demonstrates an objective, professional work style centered on task clarity and logic.';
-    affectionStrength = 'Objective decision-making, task-focused communication, resilience in high-pressure settings.';
-    affectionDev = 'Remember to celebrate team milestones and acknowledge peer contributions explicitly.';
-  }
-
-  // Top career titles context
-  const topCareersText = input.careerResults && input.careerResults.length > 0
-    ? input.careerResults.slice(0, 3).map(c => c.title || c.careerId).filter(Boolean).join(', ')
-    : 'data, engineering, and technology domains';
-
-  const archetypeTitle = input.archetype?.title || input.archetype?.name || 'Systems Pioneer';
-
-  const identityHeadline = isHighEC
-    ? (isHighEI ? 'Strategic Team Catalyst' : 'Autonomous Systems Architect')
-    : (isHighEA ? 'Empathetic Collaborative Engineer' : 'Empirical Analytical Specialist');
-
-  const identitySummary = `You combine ${isHighEC ? 'decisive problem ownership' : 'structured domain discipline'} with ${isHighEI ? 'active collaborative engagement' : 'focused independent execution'}. Your FIRO-B pattern indicates an approach to work that values ${isHighEA ? 'relational trust and team harmony' : 'objective metrics and logical clarity'}.`;
+function describeDomain(
+  expressedLabel: string,
+  wantedLabel: string,
+  expressedScore: number,
+  wantedScore: number,
+  context: string
+) {
+  const expressedBand = getScoreBand(expressedScore);
+  const wantedBand = getScoreBand(wantedScore);
+  const gap = expressedScore - wantedScore;
+  const formattedGap = `${gap > 0 ? '+' : ''}${gap}`;
 
   return {
-    firoBInterpretation: {
-      overallProfile: `Your FIRO-B profile indicates a balanced interpersonal orientation aligned with ${archetypeTitle}. You combine empirical problem-solving with tailored workplace engagement.`,
-      interpersonalStyle: `Inclusion: ${EI > WI ? 'Proactive' : 'Selective'}, Control: ${EC > WC ? 'Autonomous/Directing' : 'Structured/Guiding'}, Affection: ${EA > WA ? 'Expressive' : 'Objective'}.`,
-      workStyle: `You perform best when project expectations are clear and communication is grounded in direct, evidence-based metrics.`
-    },
-    identityInsight: {
-      headline: identityHeadline,
-      summary: identitySummary
-    },
-    interpersonalProfile: {
-      inclusion: inclusionSummary,
-      control: controlSummary,
-      affection: affectionSummary
-    },
-    dimensions: {
-      inclusion: {
-        summary: inclusionSummary,
-        strength: inclusionStrength,
-        developmentArea: inclusionDev
-      },
-      control: {
-        summary: controlSummary,
-        strength: controlStrength,
-        developmentArea: controlDev
-      },
-      affection: {
-        summary: affectionSummary,
-        strength: affectionStrength,
-        developmentArea: affectionDev
-      }
-    },
-    archetypeInsight: {
-      explanation: `Your interpersonal scores (EI:${EI}, WI:${WI}, EC:${EC}, WC:${WC}, EA:${EA}, WA:${WA}) indicate why you resonate with the ${archetypeTitle} persona. Your preference for ${isHighEC ? 'autonomy and outcome ownership' : 'structured frameworks and peer collaboration'} aligns directly with the core characteristics of this archetype.`,
-      workplaceStrengths: [
-        inclusionStrength,
-        controlStrength,
-        affectionStrength
-      ],
-      developmentAreas: [
-        inclusionDev,
-        controlDev,
-        affectionDev
-      ]
-    },
-    keyStrengths: [
-      inclusionStrength,
-      controlStrength,
-      affectionStrength
-    ],
-    developmentAreas: [
-      inclusionDev,
-      controlDev,
-      affectionDev
-    ],
-    workEnvironmentFit: {
-      preferredEnvironment: `Environments that balance focus time with structured collaborative milestones, particularly in ${topCareersText}.`,
-      collaborationStyle: isHighEI || isHighEA ? 'Collaborative and supportive squad dynamic with frequent milestone check-ins.' : 'Autonomous execution with asynchronous progress updates.',
-      communicationStyle: isHighEC ? 'Direct, objective, and outcome-oriented communication.' : 'Structured, clear, and consensus-oriented communication.',
-      responsibilityStyle: isHighEC ? 'High outcome ownership with preference for strategic accountability.' : 'Shared team responsibility with defined operational boundaries.'
-    },
-    careerGuidance: {
-      summary: `Your interpersonal scores suggest high compatibility with environments requiring ${isHighEC ? 'strategic decision-making and ownership' : 'collaborative execution and structured domain mastery'}.`,
-      recommendedWorkCharacteristics: [
-        'Clear accountability structures and objective success metrics',
-        'Cross-functional alignment with opportunities for skill growth',
-        'Psychologically safe spaces that value empirical rigor and innovation'
-      ]
-    },
-    actionableSuggestions: [
-      'Define explicit project deliverables and communication channels at the start of new initiatives.',
-      'Schedule dedicated focus blocks on your calendar to balance teamwork with deep analytical execution.',
-      'Seek mentorship in areas where you want to expand your leadership or technical influence.'
-    ]
+    summary: `${expressedLabel} is in the ${expressedBand} project band (${expressedScore}/100), while ${wantedLabel} is in the ${wantedBand} band (${wantedScore}/100). The expressed–wanted gap is ${formattedGap} points. ${describeGap(gap)}`,
+    strength: `The ${expressedLabel.toLowerCase()} score provides a ${expressedBand.toLowerCase()}-band signal about your reported approach to ${context}.`,
+    developmentArea: `Discuss how to align your expressed and wanted preferences for ${context} when starting a new team or project.`
   };
 }
 
+/**
+ * Generates a deterministic interpretation of CareerCompass's normalized FIRO-B-based scores.
+ * Used when OpenAI is unavailable or returns output that does not match the response schema.
+ */
+export function generateFiroBFallback(input: FiroBSynthesisRequest): FiroBSynthesisResult {
+  const { EI, WI, EC, WC, EA, WA } = input.firoBScores;
+  const inclusion = describeDomain('Expressed Inclusion', 'Wanted Inclusion', EI, WI, 'group involvement and collaboration');
+  const control = describeDomain('Expressed Control', 'Wanted Control', EC, WC, 'responsibility, autonomy, and guidance');
+  const affection = describeDomain('Expressed Affection', 'Wanted Affection', EA, WA, 'warmth, feedback, and interpersonal connection');
+  const strengths = [inclusion.strength, control.strength, affection.strength];
+  const developmentAreas = [inclusion.developmentArea, control.developmentArea, affection.developmentArea];
+  const topCareersText = input.careerResults.length > 0
+    ? input.careerResults.slice(0, 3).map(career => career.title || career.careerId).filter(Boolean).join(', ')
+    : 'the career areas already identified by CareerCompass';
+  const archetypeTitle = input.archetype?.title || input.archetype?.name || 'your existing career archetype';
+  const band = getScoreBand;
+
+  return {
+    firoBInterpretation: {
+      overallProfile: `Your CareerCompass FIRO-B-based scores summarize reported preferences across group involvement, responsibility, and interpersonal connection. They can be considered alongside your existing ${archetypeTitle} archetype.`,
+      interpersonalStyle: `Inclusion: expressed ${band(EI)}, wanted ${band(WI)} (gap ${EI - WI > 0 ? '+' : ''}${EI - WI}); Control: expressed ${band(EC)}, wanted ${band(WC)} (gap ${EC - WC > 0 ? '+' : ''}${EC - WC}); Affection: expressed ${band(EA)}, wanted ${band(WA)} (gap ${EA - WA > 0 ? '+' : ''}${EA - WA}).`,
+      workStyle: 'Use these project-level bands as prompts for discussing preferred collaboration, autonomy, guidance, and communication; they are descriptive, not diagnostic.'
+    },
+    identityInsight: {
+      headline: 'Interpersonal Work-Style Snapshot',
+      summary: 'The three expressed/wanted pairs describe how you report approaching group involvement, responsibility, and interpersonal connection. Consider them together rather than treating one score as a complete description.'
+    },
+    interpersonalProfile: {
+      inclusion: inclusion.summary,
+      control: control.summary,
+      affection: affection.summary
+    },
+    dimensions: {
+      inclusion,
+      control,
+      affection
+    },
+    archetypeInsight: {
+      explanation: `These normalized FIRO-B-based preferences add interpersonal context to the already-derived ${archetypeTitle}; they do not recalculate the archetype or alter career matches.`,
+      workplaceStrengths: strengths,
+      developmentAreas
+    },
+    keyStrengths: strengths,
+    developmentAreas,
+    workEnvironmentFit: {
+      preferredEnvironment: `Explore environments in ${topCareersText} that can accommodate the expressed and wanted preferences shown in your three domain pairs.`,
+      collaborationStyle: `Your inclusion scores are ${band(EI)} for expressed and ${band(WI)} for wanted inclusion.`,
+      communicationStyle: `Your affection scores are ${band(EA)} for expressed and ${band(WA)} for wanted affection.`,
+      responsibilityStyle: `Your control scores are ${band(EC)} for expressed and ${band(WC)} for wanted control.`
+    },
+    careerGuidance: {
+      summary: `Use these preferences as reflection points when exploring ${topCareersText}; CareerCompass's existing deterministic engine remains the source of career matches and rankings.`,
+      recommendedWorkCharacteristics: [
+        'Clear expectations about collaboration and individual focus',
+        'Responsibility and guidance practices that fit your expressed/wanted control pattern',
+        'Communication and feedback practices that fit your interpersonal preferences'
+      ]
+    },
+    actionableSuggestions: developmentAreas
+  };
+}

@@ -80,7 +80,7 @@ This document clearly categorizes and explains every file and directory in the p
 | **`server/src/models/Assessment.ts`** | **DB Model** | **`assessments` MongoDB collection**: Saved FIRO-B answers, 6 scores, archetype, career matches, and embedded AI synthesis. |
 | **`CareerCompass/src/data/`** | **Static Data** | **Hardcoded question banks and verified career catalog:** |
 | ├── `careerDatabase.ts` | Data File | 12+ verified careers across 5 clusters with salaries, skills, and 5-year roadmaps. |
-| ├── `firoBQuestions.ts` | Data File | 54 standardized FIRO-B psychometric questions. |
+| ├── `firoBQuestions.ts` | Data File | 54 custom FIRO-B-based interpersonal questions. |
 | ├── `customQuestions.ts` | Data File | 30 cognitive and scenario multiple choice questions. |
 | └── `archetypes.ts` | Data File | 4 core career archetypes and the deterministic classification formula. |
 

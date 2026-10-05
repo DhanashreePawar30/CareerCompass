@@ -40,7 +40,7 @@
 CareerCompass is an **AI-driven, psychometrically grounded career guidance platform** designed to eliminate subjective career choices and fragmented career advice.
 
 ### Key Highlights:
-- **Holistic 84-Point Diagnostic Pipeline:** Combines the standardized **54-question FIRO-B** (Fundamental Interpersonal Relations Orientation-Behavior) model with a **30-question Cognitive & Situational Aptitude** assessment.
+- **Holistic 84-Question Assessment Pipeline:** Combines a custom **54-question FIRO-B-based** interpersonal assessment with a **30-question Cognitive & Situational Aptitude** assessment. The custom scores are not the licensed/proprietary FIRO-B scoring method.
 - **Dynamic Multi-Vector Synthesis:** Evaluates *Analytical Logic*, *Technical Mindset*, *Creative Thinking*, *Leadership Strategy*, and *Interpersonal Dynamics*.
 - **5-Year Actionable Roadmaps:** Bridges the gap between career discovery and execution with milestone-driven skill acquisition paths, salary benchmarks, and day-in-the-life insights.
 - **Accessible & Responsive UX:** Zero-friction anonymous sessions, keyboard-first navigation (`[1-6]`, `[A-D]`), momentum scrolling, and instant demo profiling.

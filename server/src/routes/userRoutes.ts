@@ -13,6 +13,7 @@ const ProgressBodySchema = z.object({
   firoBAnswers: z.record(z.number().int().min(1).max(6)).default({}),
   customAnswers: z.record(z.string()).default({}),
   firoBScores: z.record(z.number()).nullable().default(null),
+  firoBScoreVersion: z.literal('normalized-v1').optional(),
   isFiroBComplete: z.boolean().default(false),
   isCustomComplete: z.boolean().default(false),
   firoBAiInsight: z.record(z.unknown()).nullable().default(null),

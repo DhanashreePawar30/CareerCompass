@@ -467,6 +467,7 @@ export interface IUserProgress extends Document {
   firoBAnswers: Record<string, number>;
   customAnswers: Record<string, string>;
   firoBScores: Record<string, number> | null;
+  firoBScoreVersion?: 'normalized-v1';
   isFiroBComplete: boolean;
   isCustomComplete: boolean;
   firoBAiInsight: Record<string, unknown> | null;
@@ -482,6 +483,7 @@ const UserProgressSchema = new Schema<IUserProgress>({
   firoBAnswers:     { type: Schema.Types.Mixed, default: {} },
   customAnswers:    { type: Schema.Types.Mixed, default: {} },
   firoBScores:      { type: Schema.Types.Mixed, default: null },
+  firoBScoreVersion:{ type: String, enum: ['normalized-v1'] },
   isFiroBComplete:  { type: Boolean, default: false },
   isCustomComplete: { type: Boolean, default: false },
   firoBAiInsight:   { type: Schema.Types.Mixed, default: null },

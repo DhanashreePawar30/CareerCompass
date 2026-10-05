@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 // Input Schemas
 export const FiroBScoresInputSchema = z.object({
-  EI: z.number(),
-  WI: z.number(),
-  EC: z.number(),
-  WC: z.number(),
-  EA: z.number(),
-  WA: z.number(),
+  EI: z.number().int().min(0).max(100),
+  WI: z.number().int().min(0).max(100),
+  EC: z.number().int().min(0).max(100),
+  WC: z.number().int().min(0).max(100),
+  EA: z.number().int().min(0).max(100),
+  WA: z.number().int().min(0).max(100),
 });
 
 export const ProfileInputSchema = z.object({
@@ -103,4 +103,3 @@ export const FiroBSynthesisResultSchema = z.object({
 });
 
 export type FiroBSynthesisResult = z.infer<typeof FiroBSynthesisResultSchema>;
-

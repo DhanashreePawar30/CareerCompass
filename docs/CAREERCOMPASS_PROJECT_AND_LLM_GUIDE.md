@@ -41,7 +41,7 @@ Conventional career counseling and educational guidance tools suffer from fundam
 
 ### 1.2 The CareerCompass Solution
 **CareerCompass** is an AI-powered diagnostic and trajectory navigation platform. It synthesizes:
-1. **Psychometric Behavioral Dynamics:** Quantified using the validated **FIRO-B (Fundamental Interpersonal Relations Orientation - Behavior)** model across 6 dimensions.
+1. **Interpersonal Behavioral Dynamics:** Explored with CareerCompass's custom FIRO-B-based questions across 6 dimensions; the project does not implement licensed/proprietary FIRO-B scoring or validated FIRO-B norms.
 2. **Cognitive & Scenario Aptitude:** 5 core trait vectors (Analytical, Technical, Creative, Leadership, and People dynamics).
 3. **Academic & Real Skill Baseline:** Current education tier, course stream, and verified skill tags.
 4. **Explainable AI Matching:** Transparent mathematical matching percentages with clear justification tags.
@@ -115,7 +115,7 @@ CareerCompass/
 │   │   ├── archetypes.ts       # 4 Core Persona definitions & classifier
 │   │   ├── careerDatabase.ts   # Catalog of 12+ verified careers across 4 clusters
 │   │   ├── customQuestions.ts  # 30 Cognitive & scenario questions
-│   │   └── firoBQuestions.ts   # 54 Standardized FIRO-B questions
+│   │   └── firoBQuestions.ts   # 54 custom FIRO-B-based questions
 │   ├── pages/
 │   │   ├── LandingPage.tsx     # Hero, Live Simulator widget, Value props
 │   │   ├── AssessmentHub.tsx   # Dual test launcher and progress tracker
@@ -167,10 +167,10 @@ The user journey is structured into 9 cohesive phases:
 
 ## 4. Diagnostic Assessments & Test Battery
 
-CareerCompass administers a battery of **84 diagnostic questions** split into two scientifically grounded modules:
+CareerCompass administers a battery of **84 assessment questions** split into two modules:
 
-### 4.1 FIRO-B Interpersonal Assessment (54 Questions)
-The FIRO-B instrument assesses how interpersonal needs shape a person's team role, leadership style, and workplace comfort.
+### 4.1 CareerCompass FIRO-B-Based Interpersonal Assessment (54 Questions)
+CareerCompass's custom FIRO-B-based questionnaire explores interpersonal preferences related to team roles, work style, and workplace comfort. Its project-defined scoring is not the licensed/proprietary FIRO-B scoring method or a set of validated FIRO-B norms.
 
 #### 6 Fundamental Vectors Measured:
 1. **Expressed Inclusion (EI) [9 items]:** How much the user actively reaches out to include others, join social networks, and participate in group settings.
@@ -182,8 +182,11 @@ The FIRO-B instrument assesses how interpersonal needs shape a person's team rol
 
 #### Scoring Mechanics:
 - 6-Point Likert Scale (Values $1$ to $6$).
-- Each category score ranges from $9$ to $54$ points.
-- Vectors are stored in `firoBScores = { EI, WI, EC, WC, EA, WA }`.
+- Each dimension has 9 items. The raw item sum ranges from $9$ to $54$ and is retained internally for compatibility with the existing deterministic career and archetype calculations.
+- The mean response is calculated as `raw sum / 9`, then normalized with `round(((mean - 1) / 5) * 100)` to a whole-number score from $0$ to $100$.
+- For dashboard display on a $0$–$9$ scale, the raw sum is rescaled as `(raw sum - 9) / 5` and rounded to one decimal place. The dashboard uses this display value for its chart and score labels.
+- AI and deterministic fallback interpretation use the normalized $0$–$100$ scores for `EI`, `WI`, `EC`, `WC`, `EA`, and `WA`; project interpretation bands are $0$–$33$ Lower, $34$–$66$ Moderate, and $67$–$100$ Higher. These are project bands, not validated or official FIRO-B norms.
+- Each domain is interpreted as an expressed/wanted pair: Inclusion (`EI`/`WI`), Control (`EC`/`WC`), and Affection (`EA`/`WA`). The signed expressed-minus-wanted gap is descriptive only.
 
 ---
 
@@ -245,7 +248,7 @@ To ensure scientific validity, mathematical accuracy, and bulletproof user exper
 
 | Test Case ID | Test Target | Verification Criteria | Expected Outcome |
 | :--- | :--- | :--- | :--- |
-| **UT-01** | FIRO-B Score Aggregation | Sum 9 questions per category with values $1 \dots 6$. | Score between $9$ and $54$ for each vector (EI, WI, EC, WC, EA, WA). |
+| **UT-01** | FIRO-B-Based Score Normalization | Aggregate 9 responses per dimension, calculate the mean, then apply `round(((mean - 1) / 5) * 100)`. | Raw sum is $9$–$54$; normalized score is $0$–$100$; bands are Lower ($0$–$33$), Moderate ($34$–$66$), Higher ($67$–$100$). |
 | **UT-02** | Trait Score Aggregation | Sum chosen option traits from 30 cognitive questions. | Sum of all trait counts equals $30$. |
 | **UT-03** | Archetype Classifier | Feed boundary conditions (e.g. Analytical $= 15$, EC $= 40$). | Exact deterministic resolution to `strategic-architect`. |
 | **UT-04** | Match Score Boundary Clamping | Extreme trait combinations (all maximum or all minimum). | Computed match score must strictly satisfy $65 \le \text{Score} \le 99$. |

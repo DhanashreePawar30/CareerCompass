@@ -96,117 +96,85 @@ export interface FiroBSynthesisRequestPayload {
  */
 function generateClientFallback(payload: FiroBSynthesisRequestPayload): FiroBSynthesisResult {
   const { EI, WI, EC, WC, EA, WA } = payload.firoBScores;
+  const band = (score: number) => score >= 67 ? 'Higher' : score >= 34 ? 'Moderate' : 'Lower';
+  const gapDescription = (gap: number) => gap > 0
+    ? 'You report expressing this behavior more than you want it from others.'
+    : gap < 0
+      ? 'You report wanting this behavior from others more than you report expressing it.'
+      : 'Your expressed and wanted scores are equal.';
+  const describeDomain = (
+    expressedLabel: string,
+    wantedLabel: string,
+    expressedScore: number,
+    wantedScore: number,
+    setting: string
+  ) => {
+    const gap = expressedScore - wantedScore;
+    const direction = gap > 0 ? '+' : '';
+    return {
+      summary: `${expressedLabel} is ${band(expressedScore)} (${expressedScore}/100), while ${wantedLabel} is ${band(wantedScore)} (${wantedScore}/100). The expressed–wanted gap is ${direction}${gap} points. ${gapDescription(gap)}`,
+      strength: `The ${expressedLabel.toLowerCase()} score is in the ${band(expressedScore).toLowerCase()} project band, offering a useful signal about your preferred approach to ${setting}.`,
+      developmentArea: `Use your ${expressedLabel.toLowerCase()} and ${wantedLabel.toLowerCase()} pattern to agree on a workable approach to ${setting}.`
+    };
+  };
 
-  const isHighEI = EI >= 27;
-  const isHighEC = EC >= 27;
-  const isHighEA = EA >= 27;
+  const inclusion = describeDomain('Expressed Inclusion', 'Wanted Inclusion', EI, WI, 'group involvement and collaboration');
+  const control = describeDomain('Expressed Control', 'Wanted Control', EC, WC, 'responsibility, autonomy, and guidance');
+  const affection = describeDomain('Expressed Affection', 'Wanted Affection', EA, WA, 'warmth, feedback, and interpersonal connection');
 
   const topCareersText = payload.careerResults && payload.careerResults.length > 0
     ? payload.careerResults.slice(0, 3).map(c => c.title || c.id || c.careerId).filter(Boolean).join(', ')
     : 'specialized engineering and analytical domains';
 
   const archetypeTitle = payload.archetype?.title || payload.archetype?.name || 'Systems Pioneer';
-
-  const inclusionSummary = isHighEI
-    ? 'High drive to initiate team activities and social engagement.'
-    : 'Selective, focused approach to team interaction with emphasis on deep-work autonomy.';
-
-  const controlSummary = isHighEC
-    ? 'Preference for high autonomy, strategic vision, and decision ownership.'
-    : 'Value clear guidelines, mentorship, and defined operational boundaries.';
-
-  const affectionSummary = isHighEA
-    ? 'Fosters warm, empathetic connections and psychologically safe teams.'
-    : 'Objective, task-focused professional orientation centered on logical output.';
-
-  const identityHeadline = isHighEC
-    ? (isHighEI ? 'Strategic Team Catalyst' : 'Autonomous Systems Architect')
-    : (isHighEA ? 'Empathetic Collaborative Engineer' : 'Empirical Analytical Specialist');
-
-  const identitySummary = `You combine ${isHighEC ? 'decisive problem ownership' : 'structured domain discipline'} with ${isHighEI ? 'active collaborative engagement' : 'focused independent execution'}. Your FIRO-B pattern indicates an approach to work that values ${isHighEA ? 'relational trust and team harmony' : 'objective metrics and logical clarity'}.`;
-
-  const inclusionStrength = isHighEI ? 'Proactive networking and team cohesion.' : 'High independent focus and minimal susceptibility to groupthink.';
-  const inclusionDev = isHighEI ? 'Ensure dedicated focus time to avoid meeting fatigue.' : 'Initiate communication earlier during team sprints.';
-
-  const controlStrength = isHighEC ? 'Strategic ownership, clarity of direction, and executive initiative.' : 'Operational discipline, procedural compliance, and low friction with leadership.';
-  const controlDev = isHighEC ? 'Delegate operational tasks effectively to empower peers.' : 'Build confidence in stepping into decision-making roles.';
-
-  const affectionStrength = isHighEA ? 'Empathetic team leadership and trust building.' : 'Objective decision-making and resilience under pressure.';
-  const affectionDev = isHighEA ? 'Maintain objective boundaries during tough performance reviews.' : 'Acknowledge peer contributions explicitly.';
+  const strengths = [inclusion.strength, control.strength, affection.strength];
+  const developmentAreas = [inclusion.developmentArea, control.developmentArea, affection.developmentArea];
 
   return {
     firoBInterpretation: {
-      overallProfile: `Your FIRO-B profile indicates a balanced interpersonal orientation aligned with ${archetypeTitle}. You combine empirical problem-solving with tailored workplace engagement.`,
-      interpersonalStyle: `Inclusion: ${EI > WI ? 'Proactive' : 'Selective'}, Control: ${EC > WC ? 'Autonomous/Directing' : 'Structured/Guiding'}, Affection: ${EA > WA ? 'Expressive' : 'Objective'}.`,
-      workStyle: `You perform best when project expectations are clear and communication is grounded in direct, evidence-based metrics.`
+      overallProfile: `Your CareerCompass FIRO-B-based scores provide a descriptive view of expressed and wanted interpersonal preferences alongside your ${archetypeTitle} archetype.`,
+      interpersonalStyle: `Inclusion ${band(EI)}/${band(WI)} (gap ${EI - WI > 0 ? '+' : ''}${EI - WI}); Control ${band(EC)}/${band(WC)} (gap ${EC - WC > 0 ? '+' : ''}${EC - WC}); Affection ${band(EA)}/${band(WA)} (gap ${EA - WA > 0 ? '+' : ''}${EA - WA}).`,
+      workStyle: `Use these project-level score bands to discuss preferred collaboration, responsibility, guidance, and communication; they are descriptive rather than diagnostic.`
     },
     identityInsight: {
-      headline: identityHeadline,
-      summary: identitySummary
+      headline: 'Interpersonal Work-Style Snapshot',
+      summary: `The three expressed/wanted pairs show how you report approaching group involvement, responsibility, and interpersonal connection. The results can inform career reflection alongside your profile and existing career matches.`
     },
     interpersonalProfile: {
-      inclusion: inclusionSummary,
-      control: controlSummary,
-      affection: affectionSummary
+      inclusion: inclusion.summary,
+      control: control.summary,
+      affection: affection.summary
     },
     dimensions: {
-      inclusion: {
-        summary: inclusionSummary,
-        strength: inclusionStrength,
-        developmentArea: inclusionDev
-      },
-      control: {
-        summary: controlSummary,
-        strength: controlStrength,
-        developmentArea: controlDev
-      },
-      affection: {
-        summary: affectionSummary,
-        strength: affectionStrength,
-        developmentArea: affectionDev
-      }
+      inclusion,
+      control,
+      affection
     },
     archetypeInsight: {
-      explanation: `Your interpersonal profile (EI:${EI}, WI:${WI}, EC:${EC}, WC:${WC}, EA:${EA}, WA:${WA}) aligns naturally with your derived archetype ${archetypeTitle}. Your pattern highlights a preference for ${isHighEC ? 'outcome ownership and strategic autonomy' : 'structured process discipline and peer alignment'}.`,
-      workplaceStrengths: [
-        inclusionStrength,
-        controlStrength,
-        affectionStrength
-      ],
-      developmentAreas: [
-        inclusionDev,
-        controlDev,
-        affectionDev
-      ]
+      explanation: `The six normalized scores describe interpersonal preferences that may be considered alongside the already-derived ${archetypeTitle} archetype. They do not recalculate that archetype or change career matches.`,
+      workplaceStrengths: strengths,
+      developmentAreas
     },
-    keyStrengths: [
-      inclusionStrength,
-      controlStrength,
-      affectionStrength
-    ],
-    developmentAreas: [
-      inclusionDev,
-      controlDev,
-      affectionDev
-    ],
+    keyStrengths: strengths,
+    developmentAreas,
     workEnvironmentFit: {
-      preferredEnvironment: `Environments that balance focus time with structured collaborative milestones, particularly in ${topCareersText}.`,
-      collaborationStyle: isHighEI || isHighEA ? 'Collaborative squad dynamic with active peer alignment.' : 'Autonomous execution with asynchronous milestone check-ins.',
-      communicationStyle: isHighEC ? 'Direct, objective, and outcome-oriented communication.' : 'Structured, clear, and consensus-oriented communication.',
-      responsibilityStyle: isHighEC ? 'High outcome ownership with preference for strategic accountability.' : 'Shared team responsibility with defined operational boundaries.'
+      preferredEnvironment: `Consider environments related to ${topCareersText} that can accommodate your reported preferences across collaboration, guidance, and connection.`,
+      collaborationStyle: `Expressed inclusion is in the ${band(EI).toLowerCase()} project band and wanted inclusion is in the ${band(WI).toLowerCase()} band.`,
+      communicationStyle: `Expressed affection is in the ${band(EA).toLowerCase()} project band and wanted affection is in the ${band(WA).toLowerCase()} band.`,
+      responsibilityStyle: `Expressed control is in the ${band(EC).toLowerCase()} project band and wanted control is in the ${band(WC).toLowerCase()} band.`
     },
     careerGuidance: {
-      summary: `Your interpersonal profile aligns strongly with work environments requiring ${isHighEC ? 'strategic decision-making and ownership' : 'collaborative execution and domain mastery'}.`,
+      summary: `Use the expressed and wanted patterns as discussion points when considering roles and teams related to ${topCareersText}; career matches remain determined by the existing CareerCompass engine.`,
       recommendedWorkCharacteristics: [
-        'Clear accountability structures and objective success metrics',
-        'Cross-functional alignment with opportunities for skill growth',
-        'Psychologically safe spaces that value empirical rigor and innovation'
+        'Clear expectations around collaboration and individual focus',
+        'Responsibility and guidance suited to your expressed/wanted control pattern',
+        'Communication and feedback practices aligned with your interpersonal preferences'
       ]
     },
     actionableSuggestions: [
-      'Define explicit project deliverables and communication channels at the start of new initiatives.',
-      'Schedule dedicated focus blocks on your calendar to balance teamwork with deep analytical execution.',
-      'Seek mentorship in areas where you want to expand your leadership or technical influence.'
+      inclusion.developmentArea,
+      control.developmentArea,
+      affection.developmentArea
     ]
   };
 }
@@ -243,4 +211,3 @@ export async function fetchFiroBSynthesis(
     return { ...generateClientFallback(payload), source: 'client-fallback', fallbackReason: 'network_error' };
   }
 }
-

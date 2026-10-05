@@ -28,7 +28,8 @@ export const DashboardPage: React.FC = () => {
   const {
     personalDetails,
     academicDetails,
-    firoBScores,
+    firoBNormalizedScores,
+    firoBDisplayScores,
     isFiroBComplete,
     firoBAiInsight,
     isLoadingAi,
@@ -42,35 +43,41 @@ export const DashboardPage: React.FC = () => {
   }, [isFiroBComplete, firoBAiInsight, isLoadingAi, generateFiroBAiInsight]);
 
   const firoBBarData = [
-    { name: 'Expressed Inc.', score: firoBScores.EI, fill: '#1E3A34' },
-    { name: 'Wanted Inc.', score: firoBScores.WI, fill: '#2C524A' },
-    { name: 'Expressed Ctrl', score: firoBScores.EC, fill: '#C86D51' },
-    { name: 'Wanted Ctrl', score: firoBScores.WC, fill: '#D9856C' },
-    { name: 'Expressed Aff.', score: firoBScores.EA, fill: '#4A6B5D' },
-    { name: 'Wanted Aff.', score: firoBScores.WA, fill: '#5F8576' },
+    { name: 'Expressed Inc.', score: firoBDisplayScores.EI, fill: '#1E3A34' },
+    { name: 'Wanted Inc.', score: firoBDisplayScores.WI, fill: '#2C524A' },
+    { name: 'Expressed Ctrl', score: firoBDisplayScores.EC, fill: '#C86D51' },
+    { name: 'Wanted Ctrl', score: firoBDisplayScores.WC, fill: '#D9856C' },
+    { name: 'Expressed Aff.', score: firoBDisplayScores.EA, fill: '#4A6B5D' },
+    { name: 'Wanted Aff.', score: firoBDisplayScores.WA, fill: '#5F8576' },
   ];
 
   const dimensions = [
     {
       title: 'Inclusion',
-      expressed: firoBScores.EI,
-      wanted: firoBScores.WI,
+      expressed: firoBDisplayScores.EI,
+      wanted: firoBDisplayScores.WI,
+      expressedBandScore: firoBNormalizedScores.EI,
+      wantedBandScore: firoBNormalizedScores.WI,
       icon: Users,
       description:
         'Your tendency to initiate social involvement and the amount of inclusion you prefer from others.',
     },
     {
       title: 'Control',
-      expressed: firoBScores.EC,
-      wanted: firoBScores.WC,
+      expressed: firoBDisplayScores.EC,
+      wanted: firoBDisplayScores.WC,
+      expressedBandScore: firoBNormalizedScores.EC,
+      wantedBandScore: firoBNormalizedScores.WC,
       icon: SlidersHorizontal,
       description:
         'Your tendency to take responsibility or direction and the amount of structure or influence you prefer from others.',
     },
     {
       title: 'Affection',
-      expressed: firoBScores.EA,
-      wanted: firoBScores.WA,
+      expressed: firoBDisplayScores.EA,
+      wanted: firoBDisplayScores.WA,
+      expressedBandScore: firoBNormalizedScores.EA,
+      wantedBandScore: firoBNormalizedScores.WA,
       icon: Heart,
       description:
         'Your tendency to express warmth and closeness and the amount of personal connection you prefer from others.',
@@ -78,19 +85,19 @@ export const DashboardPage: React.FC = () => {
   ];
 
   const level = (score: number) =>
-    score >= 37 ? 'Higher' : score >= 19 ? 'Moderate' : 'Lower';
+    score >= 67 ? 'Higher' : score >= 34 ? 'Moderate' : 'Lower';
 
 const summary = (() => {
   const expressed = [
-    { name: 'Inclusion', score: Number(firoBScores.EI) },
-    { name: 'Control', score: Number(firoBScores.EC) },
-    { name: 'Affection', score: Number(firoBScores.EA) },
+    { name: 'Inclusion', score: Number(firoBNormalizedScores.EI) },
+    { name: 'Control', score: Number(firoBNormalizedScores.EC) },
+    { name: 'Affection', score: Number(firoBNormalizedScores.EA) },
   ];
 
   const wanted = [
-    { name: 'Inclusion', score: Number(firoBScores.WI) },
-    { name: 'Control', score: Number(firoBScores.WC) },
-    { name: 'Affection', score: Number(firoBScores.WA) },
+    { name: 'Inclusion', score: Number(firoBNormalizedScores.WI) },
+    { name: 'Control', score: Number(firoBNormalizedScores.WC) },
+    { name: 'Affection', score: Number(firoBNormalizedScores.WA) },
   ];
 
   expressed.sort((a, b) => b.score - a.score);
@@ -220,7 +227,7 @@ const summary = (() => {
                     Interpersonal Matrix
                   </h3>
                   <p className="text-[11px] text-[#5A6E68] mt-0.5">
-                    Expressed vs. wanted scores
+                    Expressed vs. wanted scores (0–9)
                   </p>
                 </div>
                 <span className="badge-forest px-2.5 py-1 rounded-full text-[9px] font-bold">
@@ -246,7 +253,7 @@ const summary = (() => {
                       textAnchor="end"
                     />
                     <YAxis
-                      domain={[0, 54]}
+                      domain={[0, 9]}
                       tick={{ fill: '#5A6E68', fontSize: 9 }}
                     />
                     <Tooltip
@@ -290,7 +297,7 @@ const summary = (() => {
                             {d.title}
                           </h3>
                           <span className="badge-terracotta px-2 py-1 rounded-full text-[9px] font-bold shrink-0">
-                            {level(Math.max(d.expressed, d.wanted))}
+                            {level(Math.max(d.expressedBandScore, d.wantedBandScore))}
                           </span>
                         </div>
 
@@ -304,7 +311,7 @@ const summary = (() => {
                               Expressed
                             </p>
                             <p className="font-editorial text-xl font-bold text-[#1E3A34] mt-0.5">
-                              {d.expressed}
+                              {d.expressed.toFixed(1)} / 9
                             </p>
                           </div>
 
@@ -313,7 +320,7 @@ const summary = (() => {
                               Wanted
                             </p>
                             <p className="font-editorial text-xl font-bold text-[#C86D51] mt-0.5">
-                              {d.wanted}
+                              {d.wanted.toFixed(1)} / 9
                             </p>
                           </div>
                         </div>

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { FIRO_B_QUESTIONS } from '../data/firoBQuestions';
 import { CUSTOM_QUESTIONS } from '../data/customQuestions';
 import { CAREER_DATABASE, CAREER_CLUSTERS } from '../data/careerDatabase';
 import type { CareerProfile, CareerCluster } from '../data/careerDatabase';
@@ -8,6 +7,8 @@ import { fetchFiroBSynthesis } from '../services/aiService';
 import type { FiroBSynthesisResult } from '../services/aiService';
 import { fetchProgress, saveProgress } from '../services/progressService';
 import type { ProgressSnapshot } from '../services/progressService';
+import { calculateFiroBScores } from '../data/firoBScoring';
+import type { FiroBScores } from '../data/firoBScoring';
 
 
 export interface PersonalDetails {
@@ -26,15 +27,6 @@ export interface AcademicDetails {
   skillTags: string[];
 }
 
-export interface FiroBScores {
-  EI: number; // Expressed Inclusion (0-54)
-  WI: number; // Wanted Inclusion
-  EC: number; // Expressed Control
-  WC: number; // Wanted Control
-  EA: number; // Expressed Affection
-  WA: number; // Wanted Affection
-}
-
 export interface CustomTraitScores {
   Analytical: number;
   Creative: number;
@@ -49,6 +41,8 @@ interface AssessmentContextType {
   firoBAnswers: Record<number, number>;
   customAnswers: Record<number, string>;
   firoBScores: FiroBScores;
+  firoBNormalizedScores: FiroBScores;
+  firoBDisplayScores: FiroBScores;
   customTraitScores: CustomTraitScores;
   isProfileComplete: boolean;
   isFiroBComplete: boolean;
@@ -135,7 +129,6 @@ const nameFromEmail = (email: string) =>
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-const emptyFiroBScores: FiroBScores = { EI: 0, WI: 0, EC: 0, WC: 0, EA: 0, WA: 0 };
 const emptyTraitScores: CustomTraitScores = { Analytical: 0, Creative: 0, Leadership: 0, Technical: 0, People: 0 };
 
 const AssessmentContext = createContext<AssessmentContextType | undefined>(undefined);
@@ -185,7 +178,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   });
 
   const [firoBAiInsight, setFiroBAiInsight] = useState<FiroBSynthesisResult | null>(() => {
-    const saved = localStorage.getItem('cc_firob_ai_insight');
+    const saved = localStorage.getItem('cc_firob_ai_insight_normalized_v1');
     const parsed: FiroBSynthesisResult | null = saved ? JSON.parse(saved) : null;
     // Only real AI output is cached; drop stale fallbacks so the AI is retried
     return parsed?.source === 'openai' ? parsed : null;
@@ -195,9 +188,9 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   useEffect(() => {
     if (firoBAiInsight?.source === 'openai') {
-      localStorage.setItem('cc_firob_ai_insight', JSON.stringify(firoBAiInsight));
+      localStorage.setItem('cc_firob_ai_insight_normalized_v1', JSON.stringify(firoBAiInsight));
     } else {
-      localStorage.removeItem('cc_firob_ai_insight');
+      localStorage.removeItem('cc_firob_ai_insight_normalized_v1');
     }
   }, [firoBAiInsight]);
 
@@ -225,19 +218,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.setItem('cc_custom_complete', isCustomComplete ? 'true' : 'false');
   }, [isCustomComplete]);
 
-  // Accurate real score aggregation from real answers
-  const calculateFiroBScores = (): FiroBScores => {
-    const scores: FiroBScores = { EI: 0, WI: 0, EC: 0, WC: 0, EA: 0, WA: 0 };
-    FIRO_B_QUESTIONS.forEach(q => {
-      const val = firoBAnswers[q.id];
-      if (val !== undefined) {
-        scores[q.category] += val;
-      }
-    });
-    return scores;
-  };
-
-  const calculateTraitScores = (): CustomTraitScores => {
+    const calculateTraitScores = (): CustomTraitScores => {
     const traits: CustomTraitScores = { Analytical: 0, Creative: 0, Leadership: 0, Technical: 0, People: 0 };
     CUSTOM_QUESTIONS.forEach(q => {
       const selectedOptionId = customAnswers[q.id];
@@ -251,7 +232,11 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return traits;
   };
 
-  const firoBScores = Object.keys(firoBAnswers).length > 0 ? calculateFiroBScores() : emptyFiroBScores;
+  const {
+    rawScores: firoBScores,
+    normalizedScores: firoBNormalizedScores,
+    displayScores: firoBDisplayScores
+  } = calculateFiroBScores(firoBAnswers);
   const customTraitScores = Object.keys(customAnswers).length > 0 ? calculateTraitScores() : emptyTraitScores;
 
   const isProfileComplete = Boolean(personalDetails.name && personalDetails.email);
@@ -340,6 +325,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       firoBAnswers,
       customAnswers,
       firoBScores: Object.keys(firoBAnswers).length > 0 ? firoBScores : null,
+      firoBScoreVersion: 'normalized-v1',
       isFiroBComplete,
       isCustomComplete,
       firoBAiInsight: firoBAiInsight?.source === 'openai' ? firoBAiInsight : null,
@@ -411,7 +397,11 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setCustomAnswers(snapshot.customAnswers ?? {});
     setIsFiroBComplete(Boolean(snapshot.isFiroBComplete));
     setIsCustomComplete(Boolean(snapshot.isCustomComplete));
-    setFiroBAiInsight(snapshot.firoBAiInsight?.source === 'openai' ? snapshot.firoBAiInsight : null);
+    setFiroBAiInsight(
+      snapshot.firoBScoreVersion === 'normalized-v1' && snapshot.firoBAiInsight?.source === 'openai'
+        ? snapshot.firoBAiInsight
+        : null
+    );
   };
 
   const resetAssessment = () => {
@@ -470,7 +460,7 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const archetype = calculateArchetype(firoBScores, customTraitScores);
       const payload = {
-        firoBScores,
+        firoBScores: firoBNormalizedScores,
         profile: {
           educationLevel: academicDetails.educationLevel,
           courseStream: academicDetails.courseStream,
@@ -509,6 +499,8 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         firoBAnswers,
         customAnswers,
         firoBScores,
+        firoBNormalizedScores,
+        firoBDisplayScores,
         customTraitScores,
         isProfileComplete,
         isFiroBComplete,

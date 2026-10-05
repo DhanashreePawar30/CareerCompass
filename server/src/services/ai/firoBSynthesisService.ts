@@ -23,15 +23,8 @@ export async function synthesizeFiroB(rawInput: unknown): Promise<FiroBSynthesis
   // 1. Validate Input
   const parsedInputResult = FiroBSynthesisRequestSchema.safeParse(rawInput);
   if (!parsedInputResult.success) {
-    console.warn('[FIRO-B AI Service] Input validation failed. Falling back to deterministic engine:', parsedInputResult.error.format());
-    // Use fallback for invalid input structure if firoBScores are present or partially missing
-    const defaultScores = (rawInput as any)?.firoBScores || { EI: 0, WI: 0, EC: 0, WC: 0, EA: 0, WA: 0 };
-    return fallback({
-      firoBScores: defaultScores,
-      profile: (rawInput as any)?.profile,
-      archetype: (rawInput as any)?.archetype,
-      careerResults: (rawInput as any)?.careerResults || []
-    }, 'invalid_input');
+    console.error('[FIRO-B AI Service] Input validation failed:', parsedInputResult.error.format());
+    throw new Error('Invalid FIRO-B synthesis input.');
   }
 
   const input: FiroBSynthesisRequest = parsedInputResult.data;
