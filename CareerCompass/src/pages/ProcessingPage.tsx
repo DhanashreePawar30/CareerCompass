@@ -6,7 +6,7 @@ import { useAssessment } from '../context/AssessmentContext';
 
 export const ProcessingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { personalDetails, completeFiroB, completeCustom } = useAssessment();
+  const { personalDetails, completeFiroB, completeCustom, generateFiroBAiInsight, firoBAiInsight } = useAssessment();
 
   const [stepIndex, setStepIndex] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
@@ -20,9 +20,12 @@ export const ProcessingPage: React.FC = () => {
   ];
 
   useEffect(() => {
-    // Ensure assessments marked completed
+    // Ensure assessments marked completed & trigger LLM synthesis
     completeFiroB();
     completeCustom();
+    if (!firoBAiInsight) {
+      generateFiroBAiInsight();
+    }
 
     const interval = setInterval(() => {
       setStepIndex((prev) => {

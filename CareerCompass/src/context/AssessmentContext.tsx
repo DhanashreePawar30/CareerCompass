@@ -3,6 +3,9 @@ import { FIRO_B_QUESTIONS } from '../data/firoBQuestions';
 import { CUSTOM_QUESTIONS } from '../data/customQuestions';
 import { CAREER_DATABASE, CAREER_CLUSTERS } from '../data/careerDatabase';
 import type { CareerProfile, CareerCluster } from '../data/careerDatabase';
+import { calculateArchetype } from '../data/archetypes';
+import { fetchFiroBSynthesis, FiroBSynthesisResult } from '../services/aiService';
+
 
 export interface PersonalDetails {
   name: string;
@@ -53,6 +56,10 @@ interface AssessmentContextType {
   rankedCareers: CareerProfile[];
   rankedClusters: (CareerCluster & { matchPercentage: number })[];
 
+  // FIRO-B AI Insights
+  firoBAiInsight: FiroBSynthesisResult | null;
+  isLoadingAi: boolean;
+
   // Actions
   updatePersonalDetails: (details: Partial<PersonalDetails>) => void;
   updateAcademicDetails: (details: Partial<AcademicDetails>) => void;
@@ -65,6 +72,7 @@ interface AssessmentContextType {
   resetAssessment: () => void;
   loadDemoUser: () => void;
   getCareerById: (id: string) => CareerProfile | undefined;
+  generateFiroBAiInsight: () => Promise<void>;
 }
 
 const emptyPersonal: PersonalDetails = {
@@ -149,6 +157,19 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [isCustomComplete, setIsCustomComplete] = useState<boolean>(() => {
     return localStorage.getItem('cc_custom_complete') === 'true';
   });
+
+  const [firoBAiInsight, setFiroBAiInsight] = useState<FiroBSynthesisResult | null>(() => {
+    const saved = localStorage.getItem('cc_firob_ai_insight');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [isLoadingAi, setIsLoadingAi] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (firoBAiInsight) {
+      localStorage.setItem('cc_firob_ai_insight', JSON.stringify(firoBAiInsight));
+    }
+  }, [firoBAiInsight]);
 
   useEffect(() => {
     localStorage.setItem('cc_personal', JSON.stringify(personalDetails));
@@ -298,6 +319,41 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     localStorage.removeItem('cc_custom_answers');
     localStorage.removeItem('cc_firob_complete');
     localStorage.removeItem('cc_custom_complete');
+    localStorage.removeItem('cc_firob_ai_insight');
+    setFiroBAiInsight(null);
+  };
+
+  const generateFiroBAiInsight = async () => {
+    if (isLoadingAi) return;
+    setIsLoadingAi(true);
+    try {
+      const archetype = calculateArchetype(firoBScores, customTraitScores);
+      const payload = {
+        firoBScores,
+        profile: {
+          educationLevel: academicDetails.educationLevel,
+          courseStream: academicDetails.courseStream,
+          institution: personalDetails.email,
+          gradePercentage: academicDetails.gradePercentage,
+          skills: academicDetails.skillTags
+        },
+        archetype: {
+          id: archetype.id,
+          title: archetype.title
+        },
+        careerResults: rankedCareers.slice(0, 5).map(c => ({
+          id: c.id,
+          title: c.title,
+          matchScore: c.matchScore
+        }))
+      };
+      const insight = await fetchFiroBSynthesis(payload);
+      setFiroBAiInsight(insight);
+    } catch (err) {
+      console.error('Failed to generate FIRO-B AI synthesis:', err);
+    } finally {
+      setIsLoadingAi(false);
+    }
   };
 
   const loadDemoUser = () => {
@@ -338,6 +394,8 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isAssessmentComplete,
         rankedCareers,
         rankedClusters,
+        firoBAiInsight,
+        isLoadingAi,
         updatePersonalDetails,
         updateAcademicDetails,
         addSkillTag,
@@ -348,7 +406,8 @@ export const AssessmentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         completeCustom,
         resetAssessment,
         loadDemoUser,
-        getCareerById
+        getCareerById,
+        generateFiroBAiInsight
       }}
     >
       {children}
